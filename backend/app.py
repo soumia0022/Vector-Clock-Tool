@@ -133,6 +133,33 @@ def delete_process(pid: str):
 
     return jsonify({"ok": True, "state": STATE})
 
+@app.post("/event/local/<pid>")
+def add_local_event_to_pid(pid: str):
+    """
+    Body JSON: { "process": "P1" }  (same as /event/local but with pid in URL)
+    """
+    global NEXT_EVENT_NUM
+
+    # Ensure process exists
+    if pid not in STATE["processes"]:
+        return jsonify({"ok": False, "error": f"Process {pid} not found"}), 400
+
+    vec = _latest_vector_for_process(pid)
+    i = _process_index(pid)
+    vec[i] += 1 #increment own index in the vector clock
+
+    eid = f"e{NEXT_EVENT_NUM}"
+    NEXT_EVENT_NUM += 1
+
+    STATE["events"].append({
+        "id": eid,
+        "process": pid,
+        "timestamp": vec,
+        "type": "LOCAL"
+    })
+
+    return jsonify({"ok": True, "event_id": eid, "state": STATE})
+
 @app.post("/event/local")
 def add_local_event():
     """

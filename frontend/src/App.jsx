@@ -67,6 +67,25 @@ export default function App() {
     }
   };
 
+  const addLocalEvent = async (pid) => {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await fetch(`${API}/event/local`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ process: pid }),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || "Failed to add local event");
+      await loadState();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
       <h1>Vector Clock Tool</h1>
@@ -109,6 +128,9 @@ export default function App() {
               <button onClick={() => delete_process(pid)} disabled={busy}>
                 Delete
               </button>
+              <button onClick={() => addLocalEvent(pid)} disabled={busy || !state?.processes?.includes(pid)}>
+              Add local event
+            </button>
             </div>
           </div>
         ))}
