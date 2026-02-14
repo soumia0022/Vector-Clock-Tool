@@ -4,7 +4,6 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# --- In-memory state (fine for now) ---
 STATE = {
     "processes": [],   # e.g. ["P1", "P2"]
     "events": [],      # e.g. [{"id":"e1","process":"P1","timestamp":[1,0]}]
