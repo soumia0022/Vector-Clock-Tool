@@ -38,6 +38,48 @@ def _latest_vector_for_process(process_id: str) -> list[int]:
             break
     return vec
 
+def _renumber_processes_and_rewrite_events():
+    """
+    Renumber processes to P1..Pk and rewrite events accordingly.
+    Also rewrites timestamps to match the new process ordering.
+    """
+    global NEXT_PROCESS_NUM
+
+    old_processes = STATE["processes"][:]  # e.g. ["P1","P3","P4"]
+    new_processes = [f"P{i+1}" for i in range(len(old_processes))]
+
+    # Map old pid -> new pid
+    pid_map = {old: new for old, new in zip(old_processes, new_processes)}
+
+    # Build index map old_index -> new_index (based on new order)
+    # old_index is position in old_processes; new_index is position in new_processes (same position here)
+    index_map = {old_i: new_i for new_i, old_i in enumerate(range(len(old_processes)))}
+
+    # Update processes
+    STATE["processes"] = new_processes
+
+    # Rewrite events: process id + timestamp dimensions
+    for ev in STATE["events"]:
+        old_pid = ev["process"]
+        if old_pid in pid_map:
+            ev["process"] = pid_map[old_pid]
+
+        old_ts = ev["timestamp"]
+        # old_ts length should equal len(old_processes); if not, pad/truncate safely
+        if len(old_ts) < len(old_processes):
+            old_ts = old_ts + [0] * (len(old_processes) - len(old_ts))
+        elif len(old_ts) > len(old_processes):
+            old_ts = old_ts[:len(old_processes)]
+
+        # reorder timestamp according to index_map (currently identity, but kept for correctness)
+        new_ts = [0] * len(new_processes)
+        for old_i, new_i in index_map.items():
+            new_ts[new_i] = old_ts[old_i]
+
+        ev["timestamp"] = new_ts
+
+    # Next process id should be the next integer
+    NEXT_PROCESS_NUM = len(STATE["processes"]) + 1
 
 def _recompute_all_vectors():
     """
@@ -75,6 +117,21 @@ def add_process():
 
     return jsonify({"ok": True, "process_id": pid, "state": STATE})
 
+@app.delete("/process/<pid>")
+def delete_process(pid: str):
+    if pid not in STATE["processes"]:
+        return jsonify({"ok": False, "error": f"Process {pid} not found"}), 404
+
+    # Remove the process
+    STATE["processes"].remove(pid)
+
+    # Remove events of that process
+    STATE["events"] = [ev for ev in STATE["events"] if ev["process"] != pid]
+
+    # Recompute vectors to match new process list
+    _renumber_processes_and_rewrite_events()
+
+    return jsonify({"ok": True, "state": STATE})
 
 @app.post("/event/local")
 def add_local_event():
