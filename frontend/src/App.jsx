@@ -69,6 +69,7 @@ export default function App() {
       {state && (
         <ProcessGrid
           processes={state.processes}
+          events={state.events}
           busy={busy}
           onDelete={handleDeleteProcess}
           onAddEvent={handleAddEvent}
