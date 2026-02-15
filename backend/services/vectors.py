@@ -34,3 +34,20 @@ def recompute_all_vectors():
             ev["timestamp"] = ts + [0] * (n - len(ts))
         elif len(ts) > n:
             ev["timestamp"] = ts[:n]
+
+def recompute_all_event_timestamps():
+    """
+    Recompute all timestamps from scratch based on current
+    process list and event ordering.
+    """
+    n = len(STATE["processes"])
+    current_vectors = {pid: [0]*n for pid in STATE["processes"]}
+
+    for ev in STATE["events"]:
+        pid = ev["process"]
+        i = STATE["processes"].index(pid)
+
+        # local event rule
+        current_vectors[pid][i] += 1
+
+        ev["timestamp"] = current_vectors[pid][:]
