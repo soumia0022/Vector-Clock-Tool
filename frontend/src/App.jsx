@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-
-const API = "http://localhost:5000";
+import { getState, createProcess, deleteProcess, addLocalEvent } from "./api";
+import ProcessGrid from "./components/ProcessGrid";
 
 export default function App() {
   const [state, setState] = useState(null);
@@ -9,8 +9,7 @@ export default function App() {
 
   const loadState = async () => {
     setError("");
-    const r = await fetch(`${API}/state`);
-    const data = await r.json();
+    const data = await getState();
     setState(data);
   };
 
@@ -18,13 +17,11 @@ export default function App() {
     loadState().catch((e) => setError(String(e)));
   }, []);
 
-  const addProcess = async () => {
+  const handleAddProcess = async () => {
     setBusy(true);
-    setError("");
     try {
-      const r = await fetch(`${API}/process`, { method: "POST" });
-      const data = await r.json();
-      if (!data.ok) throw new Error(data.error || "Failed to add process");
+      const data = await createProcess();
+      if (!data.ok) throw new Error(data.error);
       await loadState();
     } catch (e) {
       setError(String(e));
@@ -33,17 +30,11 @@ export default function App() {
     }
   };
 
-  const addLocalEventToP1 = async () => {
+  const handleDeleteProcess = async (pid) => {
     setBusy(true);
-    setError("");
     try {
-      const r = await fetch(`${API}/event/local`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ process: "P1" }),
-      });
-      const data = await r.json();
-      if (!data.ok) throw new Error(data.error || "Failed to add local event");
+      const data = await deleteProcess(pid);
+      if (!data.ok) throw new Error(data.error);
       await loadState();
     } catch (e) {
       setError(String(e));
@@ -52,32 +43,11 @@ export default function App() {
     }
   };
 
-  const delete_process = async (pid) => {
+  const handleAddEvent = async (pid) => {
     setBusy(true);
-    setError("");
     try {
-      const r = await fetch(`${API}/process/${pid}`, { method: "DELETE" });
-      const data = await r.json();
-      if (!data.ok) throw new Error(data.error || "Failed to delete process");
-      await loadState();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const addLocalEvent = async (pid) => {
-    setBusy(true);
-    setError("");
-    try {
-      const r = await fetch(`${API}/event/local`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ process: pid }),
-      });
-      const data = await r.json();
-      if (!data.ok) throw new Error(data.error || "Failed to add local event");
+      const data = await addLocalEvent(pid);
+      if (!data.ok) throw new Error(data.error);
       await loadState();
     } catch (e) {
       setError(String(e));
@@ -90,56 +60,19 @@ export default function App() {
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
       <h1>Vector Clock Tool</h1>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-        <button onClick={addProcess} disabled={busy}>
-          Add process
-        </button>
+      <button onClick={handleAddProcess} disabled={busy}>
+        Add process
+      </button>
 
-        <button onClick={addLocalEventToP1} disabled={busy || !state?.processes?.includes("P1")}>
-          Add local event to P1
-        </button>
+      {error && <div style={{ color: "crimson" }}>{error}</div>}
 
-        <button onClick={() => loadState()} disabled={busy}>
-          Refresh
-        </button>
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 12,
-          marginBottom: 16,
-        }}
-      >
-        {(state?.processes || []).map((pid) => (
-          <div
-            key={pid}
-            style={{
-              border: "1px solid #010101",
-              borderRadius: 12,
-              padding: 12,
-              background: "#0f0101cd",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: 18 }}>{pid}</div>
-            <div style={{ color: "#666", marginTop: 6 }}>
-              Process timeline will go here
-              <button onClick={() => delete_process(pid)} disabled={busy}>
-                Delete
-              </button>
-              <button onClick={() => addLocalEvent(pid)} disabled={busy || !state?.processes?.includes(pid)}>
-              Add local event
-            </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {error && (
-        <div style={{ marginBottom: 12, color: "crimson" }}>
-          {error}
-        </div>
+      {state && (
+        <ProcessGrid
+          processes={state.processes}
+          busy={busy}
+          onDelete={handleDeleteProcess}
+          onAddEvent={handleAddEvent}
+        />
       )}
 
       <pre style={{ background: "#0f0101cd", padding: 12, borderRadius: 8 }}>
