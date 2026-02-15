@@ -23,3 +23,11 @@ export async function addLocalEvent(pid) {
   });
   return r.json();
 }
+
+export async function deleteEvent(eventId) {
+  const r = await fetch(`${API}/event/${eventId}`, {
+    method: "DELETE",
+  });
+  return r.json();
+}
+

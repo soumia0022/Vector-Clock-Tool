@@ -1,6 +1,6 @@
 import ProcessCard from "./ProcessCard";
 
-export default function ProcessGrid({ processes, events, busy, onDelete, onAddEvent }) {
+export default function ProcessGrid({ processes, events, busy, onDelete, onAddEvent, onDeleteEvent }) {
   return (
     <div
       style={{
@@ -21,6 +21,7 @@ export default function ProcessGrid({ processes, events, busy, onDelete, onAddEv
           busy={busy}
           onDelete={onDelete}
           onAddEvent={onAddEvent}
+          onDeleteEvent={onDeleteEvent}
         />
         );
     })}

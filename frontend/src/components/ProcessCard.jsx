@@ -4,6 +4,7 @@ export default function ProcessCard({
   busy,
   onDelete,
   onAddEvent,
+  onDeleteEvent,
 }) {
   return (
     <div
@@ -61,6 +62,13 @@ export default function ProcessCard({
           >
             <div><strong>{event.id}</strong></div>
             <div>ts: [{event.timestamp.join(", ")}]</div>
+            <button
+                onClick={() => onDeleteEvent(event.id)}
+                disabled={busy}
+                >
+                Delete 
+            </button>
+
           </div>
         ))}
       </div>

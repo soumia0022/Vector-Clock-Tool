@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getState, createProcess, deleteProcess, addLocalEvent } from "./api";
+import { getState, createProcess, deleteProcess, addLocalEvent, deleteEvent } from "./api";
 import ProcessGrid from "./components/ProcessGrid";
 
 export default function App() {
@@ -56,6 +56,19 @@ export default function App() {
     }
   };
 
+  const handleDeleteEvent = async (eventId) => {
+    setBusy(true);
+    try {
+      const data = await deleteEvent(eventId);
+      if (!data.ok) throw new Error(data.error);
+      await loadState();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
       <h1>Vector Clock Tool</h1>
@@ -73,6 +86,7 @@ export default function App() {
           busy={busy}
           onDelete={handleDeleteProcess}
           onAddEvent={handleAddEvent}
+          onDeleteEvent={handleDeleteEvent}
         />
       )}
 
