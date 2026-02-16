@@ -4,7 +4,7 @@ from services.vectors import latest_vector_for_process, process_index
 
 def add_local_event(pid: str) -> str:
     if pid not in STATE["processes"]:
-        raise ValueError(f"Process {pid} not found")
+        raise KeyError(f"Process {pid} not found")
 
     vec = latest_vector_for_process(pid)
     i = process_index(pid)
@@ -20,3 +20,54 @@ def add_local_event(pid: str) -> str:
         "type": "LOCAL"
     })
     return eid
+
+
+def delete_event_node(event_id: str) -> None:
+    target = next((ev for ev in STATE["events"] if ev["id"] == event_id), None)
+    if not target:
+        raise KeyError(f"Event {event_id} not found")
+
+    STATE["events"] = [ev for ev in STATE["events"] if ev["id"] != event_id]
+    renumber_events()
+    recompute_all_event_timestamps()
+
+
+def renumber_events() -> None:
+    for idx, ev in enumerate(STATE["events"], start=1):
+        ev["id"] = f"e{idx}"
+    state_mod.NEXT_EVENT_NUM = len(STATE["events"]) + 1
+
+
+
+
+def recompute_all_event_timestamps():
+    """
+    Recompute all vector timestamps from scratch
+    based on current process list and current event ordering.
+    Assumes only LOCAL events for now.
+    """
+
+    n = len(STATE["processes"])
+
+    # current vector state per process
+    current_vectors = {
+        pid: [0] * n for pid in STATE["processes"]
+    }
+
+    for ev in STATE["events"]:
+        pid = ev["process"]
+
+        # safety: skip if process somehow missing
+        if pid not in current_vectors:
+            continue
+
+        i = STATE["processes"].index(pid)
+
+        # LOCAL event rule: increment own component
+        current_vectors[pid][i] += 1
+
+        # assign copy to event
+        ev["timestamp"] = current_vectors[pid][:]
+
+    # After recompute, event counter should still be correct
+    state_mod.NEXT_EVENT_NUM = len(STATE["events"]) + 1
