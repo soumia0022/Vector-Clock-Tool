@@ -17,6 +17,8 @@ def create_process():
 def remove_process(pid: str):
     try:
         delete_process(pid)
+    except KeyError as e:
+        return jsonify({"ok": False, "error": e.args[0]}), 404
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 404
     return jsonify({"ok": True, "state": STATE})
