@@ -56,8 +56,6 @@ def recompute_all_event_timestamps():
 
     for ev in STATE["events"]:
         pid = ev["process"]
-
-        # safety: skip if process somehow missing
         if pid not in current_vectors:
             continue
 
@@ -66,8 +64,6 @@ def recompute_all_event_timestamps():
         # LOCAL event rule: increment own component
         current_vectors[pid][i] += 1
 
-        # assign copy to event
         ev["timestamp"] = current_vectors[pid][:]
 
-    # After recompute, event counter should still be correct
     state_mod.NEXT_EVENT_NUM = len(STATE["events"]) + 1

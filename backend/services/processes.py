@@ -44,29 +44,52 @@ def delete_process(pid: str) -> int:
     return deleted_index
 
 
-def renumber_processes_and_rewrite_event_process_fields() -> None:
+def build_process_renaming_map() -> dict[str, str]:
     """
-    Renumber processes to P1..Pk and rewrite event.process fields to match.
-    Does NOT renumber events.
-    Does NOT recompute vector clock values (only adjusts dimensions/ids).
+    Returns mapping old_pid -> new_pid based on current STATE['processes'] order.
+    Example: ["P1","P4"] -> {"P1":"P1", "P4":"P2"}
     """
-    old_processes = STATE["processes"][:]        # after deletion, e.g. ["P1","P2","P4"]
-    new_processes = [f"P{i+1}" for i in range(len(old_processes))]  # ["P1","P2","P3"]
-    pid_map = dict(zip(old_processes, new_processes))
+    old_processes = STATE["processes"][:]
+    new_processes = [f"P{i+1}" for i in range(len(old_processes))]
+    return dict(zip(old_processes, new_processes))
 
-    STATE["processes"] = new_processes
 
-    # update event.process values
+def apply_process_renaming(pid_map: dict[str, str]) -> None:
+    """Renames STATE['processes'] using pid_map."""
+    STATE["processes"] = [pid_map[pid] for pid in STATE["processes"]]
+
+
+def rewrite_event_process_fields(pid_map: dict[str, str]) -> None:
+    """Renames ev['process'] for every event using pid_map."""
     for ev in STATE["events"]:
         if ev["process"] in pid_map:
             ev["process"] = pid_map[ev["process"]]
 
-        # ensure timestamps length equals number of processes
-        n = len(new_processes)
+
+def ensure_event_timestamp_lengths() -> None:
+    """
+    Ensures every ev['timestamp'] length matches len(STATE['processes']).
+    Only pads/truncates length — does NOT recompute values.
+    """
+    n = len(STATE["processes"])
+    for ev in STATE["events"]:
         ts = ev["timestamp"]
         if len(ts) < n:
             ev["timestamp"] = ts + [0] * (n - len(ts))
         elif len(ts) > n:
             ev["timestamp"] = ts[:n]
 
+
+def update_process_counter() -> None:
     state_mod.NEXT_PROCESS_NUM = len(STATE["processes"]) + 1
+
+
+def renumber_processes_and_rewrite_event_process_fields() -> None:
+    """
+    Orchestrator: renumber processes and update event.process fields + timestamp length.
+    """
+    pid_map = build_process_renaming_map()
+    apply_process_renaming(pid_map)
+    rewrite_event_process_fields(pid_map)
+    ensure_event_timestamp_lengths()
+    update_process_counter()
