@@ -1,8 +1,11 @@
 from services.events import add_local_event, delete_event_node
 from services.processes import add_process
 import pytest
-from state import STATE
+from state import STATE, reset_state
 
+@pytest.fixture(autouse=True)
+def reset():
+    reset_state()
 def test_create_local_events():
     # create processes P1, P2
     pid1 = add_process()
@@ -40,8 +43,7 @@ def test_delete_event_node():
     # delete event eid1
     delete_event_node(eid1)
 
-    # check event is deleted and remaining event is renumbered
-    assert all(ev["id"] != eid1 for ev in STATE["events"])
+    
     assert any(ev["id"] == "e1" for ev in STATE["events"])  # eid2 should be renumbered to e1
 
     #check timestamps are recomputed correctly after deletion

@@ -12,6 +12,8 @@ def create_local_event():
 
     try:
         eid = add_local_event(pid)
+    except KeyError as e:
+        return jsonify({"ok": False, "error": e.args[0]}), 404
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
 
@@ -21,6 +23,8 @@ def create_local_event():
 def create_local_event_for_pid(pid: str):
     try:
         eid = add_local_event(pid)
+    except KeyError as e:
+        return jsonify({"ok": False, "error": e.args[0]}), 404
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
     return jsonify({"ok": True, "event_id": eid, "state": STATE})
