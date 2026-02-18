@@ -61,6 +61,7 @@ export default function ProcessCard({
             }}
           >
             <div><strong>{event.id}</strong></div>
+            <div><strong>{event.type}</strong></div>
             <div>ts: [{event.timestamp.join(", ")}]</div>
             <button
                 onClick={() => onDeleteEvent(event.id)}
