@@ -67,3 +67,51 @@ def recompute_all_event_timestamps():
         ev["timestamp"] = current_vectors[pid][:]
 
     state_mod.NEXT_EVENT_NUM = len(STATE["events"]) + 1
+
+
+def send_message(from_pid: str, to_pid: str) -> tuple[str, str]:
+    if from_pid not in STATE["processes"]:
+        raise KeyError(f"Process {from_pid} not found")
+    if to_pid not in STATE["processes"]:
+        raise KeyError(f"Process {to_pid} not found")
+
+    n = len(STATE["processes"])
+
+    # --- SEND EVENT ---
+    send_vec = latest_vector_for_process(from_pid)
+    i = process_index(from_pid)
+    send_vec[i] += 1
+
+    send_id = f"e{state_mod.NEXT_EVENT_NUM}"
+    state_mod.NEXT_EVENT_NUM += 1
+
+    STATE["events"].append({
+        "id": send_id,
+        "process": from_pid,
+        "timestamp": send_vec,
+        "type": "SEND"
+    })
+
+    # --- RECEIVE EVENT ---
+    recv_vec = latest_vector_for_process(to_pid)
+    j = process_index(to_pid)
+
+    # element-wise max
+    recv_vec = [
+        max(recv_vec[k], send_vec[k])
+        for k in range(n)
+    ]
+
+    recv_vec[j] += 1
+
+    recv_id = f"e{state_mod.NEXT_EVENT_NUM}"
+    state_mod.NEXT_EVENT_NUM += 1
+
+    STATE["events"].append({
+        "id": recv_id,
+        "process": to_pid,
+        "timestamp": recv_vec,
+        "type": "RECEIVE"
+    })
+
+    return send_id, recv_id

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from state import STATE
-from services.events import add_local_event, delete_event_node
+from services.events import add_local_event, delete_event_node, send_message
 bp = Blueprint("events", __name__)
 
 @bp.post("/event/local")
@@ -36,3 +36,20 @@ def delete_event(event_id: str):
     except KeyError as e:
         return jsonify({"ok": False, "error": str(e)}), 404
     return jsonify({"ok": True, "state": STATE})
+@bp.post("/event/send")
+def create_send_event():
+    data = request.get_json()
+    from_pid = data.get("from")
+    to_pid = data.get("to")
+
+    try:
+        send_id, recv_id = send_message(from_pid, to_pid)
+    except KeyError as e:
+        return jsonify({"ok": False, "error": e.args[0]}), 404
+
+    return jsonify({
+        "ok": True,
+        "send_event": send_id,
+        "receive_event": recv_id,
+        "state": STATE
+    })
