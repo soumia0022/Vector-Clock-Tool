@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getState, createProcess, deleteProcess, addLocalEvent, deleteEvent } from "./api";
+import { getState, createProcess, deleteProcess, addLocalEvent, deleteEvent, computeHappensBefore } from "./api";
 import ProcessGrid from "./components/ProcessGrid";
 import SendPanel from "./components/SendPanel";
 import { sendMessage } from "./api";
@@ -71,6 +71,19 @@ export default function App() {
     }
   };
 
+  const handleComputeHappensBefore = async () => {
+    setBusy(true);
+    try {
+      const data = await computeHappensBefore();
+      if (!data.ok) throw new Error(data.error);
+      await loadState();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   
 const handleSendMessage = async (fromPid, toPid) => {
   setBusy(true);
@@ -91,6 +104,13 @@ const handleSendMessage = async (fromPid, toPid) => {
 
       <button onClick={handleAddProcess} disabled={busy}>
         Add process
+      </button>
+      <button
+        onClick={handleComputeHappensBefore}
+        disabled={busy || !state || state.events.length === 0}
+        style={{ marginLeft: 12 }}
+      >
+        Compute happens-before
       </button>
 
       {error && <div style={{ color: "crimson" }}>{error}</div>}

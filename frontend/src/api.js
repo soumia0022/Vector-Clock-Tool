@@ -40,4 +40,11 @@ export async function sendMessage(fromPid, toPid) {
   return r.json();
 }
 
+export async function computeHappensBefore() {
+  const r = await fetch(`${API}/analysis/happens-before`, {
+    method: "POST",
+  });
+  return r.json();
+}
+
 
