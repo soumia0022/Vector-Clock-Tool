@@ -17,31 +17,43 @@ def add_process() -> str:
 
 
 def delete_process(pid: str) -> int:
-    """
-    Deletes a process and updates timestamps by removing the deleted dimension.
-    Returns deleted_index (the removed dimension index) for debugging/logging if needed.
-    """
     if pid not in STATE["processes"]:
         raise KeyError(f"Process {pid} not found")
 
     deleted_index = STATE["processes"].index(pid)
 
-    # remove process
+    # 1) find messages involving this process (BEFORE removing it / renaming)
+    removed_msg_ids = {
+        m["id"] for m in STATE["messages"]
+        if m.get("from") == pid or m.get("to") == pid
+    }
+
+    # 2) remove process
     STATE["processes"].remove(pid)
 
-    # drop events belonging to that process
-    STATE["events"] = [ev for ev in STATE["events"] if ev["process"] != pid]
+    # 3) drop events belonging to that process OR linked to removed messages
+    STATE["events"] = [
+        ev for ev in STATE["events"]
+        if ev.get("process") != pid and ev.get("message_id") not in removed_msg_ids
+    ]
 
-    # remove the deleted dimension from ALL remaining timestamps
+    # 4) remove those messages
+    STATE["messages"] = [
+        m for m in STATE["messages"]
+        if m.get("from") != pid and m.get("to") != pid
+    ]
+
+    # 5) remove the deleted dimension from ALL remaining timestamps
     for ev in STATE["events"]:
         ts = ev["timestamp"]
         if deleted_index < len(ts):
             ev["timestamp"] = ts[:deleted_index] + ts[deleted_index + 1:]
 
-    # renumber processes and rewrite event.process names accordingly
+    # 6) renumber processes AND rewrite event.process + message endpoints
     renumber_processes_and_rewrite_event_process_fields()
 
     return deleted_index
+
 
 
 def build_process_renaming_map() -> dict[str, str]:
@@ -57,6 +69,14 @@ def build_process_renaming_map() -> dict[str, str]:
 def apply_process_renaming(pid_map: dict[str, str]) -> None:
     """Renames STATE['processes'] using pid_map."""
     STATE["processes"] = [pid_map[pid] for pid in STATE["processes"]]
+
+def rewrite_message_endpoints(pid_map: dict[str, str]) -> None:
+    """Renames message 'from'/'to' using pid_map."""
+    for m in STATE["messages"]:
+        if m.get("from") in pid_map:
+            m["from"] = pid_map[m["from"]]
+        if m.get("to") in pid_map:
+            m["to"] = pid_map[m["to"]]
 
 
 def rewrite_event_process_fields(pid_map: dict[str, str]) -> None:
@@ -91,5 +111,6 @@ def renumber_processes_and_rewrite_event_process_fields() -> None:
     pid_map = build_process_renaming_map()
     apply_process_renaming(pid_map)
     rewrite_event_process_fields(pid_map)
+    rewrite_message_endpoints(pid_map) 
     ensure_event_timestamp_lengths()
     update_process_counter()
