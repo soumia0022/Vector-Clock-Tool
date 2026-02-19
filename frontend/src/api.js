@@ -31,3 +31,13 @@ export async function deleteEvent(eventId) {
   return r.json();
 }
 
+export async function sendMessage(fromPid, toPid) {
+  const r = await fetch(`${API}/event/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from: fromPid, to: toPid }),
+  });
+  return r.json();
+}
+
+

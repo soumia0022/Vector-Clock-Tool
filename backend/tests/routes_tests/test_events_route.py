@@ -49,9 +49,6 @@ def test_create_local_event_success_returns_200(client):
     assert data["state"]["events"][0]["process"] == "P1"
 
 
-
-
-
 def test_create_local_event_for_pid_success_returns_200(client):
     STATE["processes"].append("P1")
 
@@ -90,3 +87,33 @@ def test_delete_event_success_returns_200_and_removes_event(client):
     assert data["ok"] is True
     assert len(data["state"]["events"]) == 0
     assert len(STATE["events"]) == 0
+
+def test_create_send_event_success_returns_200(client):
+    STATE["processes"].clear()
+    STATE["events"].clear()
+    STATE["messages"].clear()
+
+    STATE["processes"].append("P1")
+    STATE["processes"].append("P2")
+
+    r = client.post("/event/send", json={"from": "P1", "to": "P2"})
+    assert r.status_code == 200
+    data = r.get_json()
+
+    assert data["ok"] is True
+    assert "send_event" in data
+    assert "receive_event" in data
+    assert data["send_event"].startswith("e")
+    assert data["receive_event"].startswith("e")
+
+    assert "state" in data
+    assert len(data["state"]["events"]) == 2
+
+    send_ev = next(ev for ev in data["state"]["events"] if ev["id"] == data["send_event"])
+    recv_ev = next(ev for ev in data["state"]["events"] if ev["id"] == data["receive_event"])
+
+    assert send_ev["type"] == "SEND"
+    assert send_ev["process"] == "P1"
+
+    assert recv_ev["type"] == "RECEIVE"
+    assert recv_ev["process"] == "P2"

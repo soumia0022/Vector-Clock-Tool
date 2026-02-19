@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getState, createProcess, deleteProcess, addLocalEvent, deleteEvent } from "./api";
 import ProcessGrid from "./components/ProcessGrid";
+import SendPanel from "./components/SendPanel";
+import { sendMessage } from "./api";
 
 export default function App() {
   const [state, setState] = useState(null);
@@ -69,6 +71,20 @@ export default function App() {
     }
   };
 
+  
+const handleSendMessage = async (fromPid, toPid) => {
+  setBusy(true);
+  try {
+    const data = await sendMessage(fromPid, toPid);
+    if (!data.ok) throw new Error(data.error);
+    await loadState();
+  } catch (e) {
+    setError(String(e));
+  } finally {
+    setBusy(false);
+  }
+};
+
   return (
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
       <h1>Vector Clock Tool</h1>
@@ -78,8 +94,16 @@ export default function App() {
       </button>
 
       {error && <div style={{ color: "crimson" }}>{error}</div>}
+      {state && (
+        <SendPanel
+          processes={state.processes}
+          onSend={handleSendMessage}
+          busy={busy}
+        />
+      )}
 
       {state && (
+        
         <ProcessGrid
           processes={state.processes}
           events={state.events}
@@ -96,3 +120,4 @@ export default function App() {
     </div>
   );
 }
+
