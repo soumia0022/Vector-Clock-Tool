@@ -4,6 +4,9 @@ from services.processes import add_process
 import pytest
 from state import STATE, reset_state
 
+@pytest.fixture(autouse=True)
+def reset():
+    reset_state()
 def test_happens_before_local_events():
     pid1 = add_process()
 
@@ -80,6 +83,8 @@ def test_compute_concurrent_events_basic():
             a, b = r["a"], r["b"]
         elif isinstance(r, dict) and "x" in r and "y" in r:
             a, b = r["x"], r["y"]
+        elif isinstance(r, dict) and "event1" in r and "event2" in r:
+            a, b = r["event1"], r["event2"]
         else:
             continue
         conc_pairs.add(tuple(sorted((a, b))))
