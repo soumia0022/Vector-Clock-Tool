@@ -47,4 +47,10 @@ export async function computeHappensBefore() {
   return r.json();
 }
 
+export async function computeConcurrentEvents() {
+  const r = await fetch(`${API}/analysis/concurrent`, {
+    method: "POST",
+  });
+  return r.json();
+}
 

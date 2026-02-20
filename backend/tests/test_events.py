@@ -1,5 +1,7 @@
 from services.events import add_local_event, delete_event_node, send_message
 from services.processes import add_process
+from services.refresh import recompute_all_event_timestamps
+
 import pytest
 from state import STATE, reset_state
 
@@ -146,7 +148,6 @@ def test_recompute_receive_merge_branch():
     add_local_event(p2)  # makes p2 vector non-zero so merge is meaningful
     send_id, recv_id = send_message(p1, p2)
 
-    from services.events import recompute_all_event_timestamps
     recompute_all_event_timestamps()
 
     recv_ev = next(ev for ev in STATE["events"] if ev["id"] == recv_id)
