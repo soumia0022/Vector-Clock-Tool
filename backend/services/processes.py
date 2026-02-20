@@ -1,5 +1,6 @@
 from state import STATE
 import state as state_mod
+from services.refresh import refresh_graphs
 
 def add_process() -> str:
     pid = f"P{state_mod.NEXT_PROCESS_NUM}"
@@ -12,6 +13,7 @@ def add_process() -> str:
         ts = ev["timestamp"]
         if len(ts) < n:
             ev["timestamp"] = ts + [0] * (n - len(ts))
+    refresh_graphs(renumber=False)
 
     return pid
 
@@ -51,6 +53,7 @@ def delete_process(pid: str) -> int:
 
     # 6) renumber processes AND rewrite event.process + message endpoints
     renumber_processes_and_rewrite_event_process_fields()
+    refresh_graphs(renumber=False) 
 
     return deleted_index
 
