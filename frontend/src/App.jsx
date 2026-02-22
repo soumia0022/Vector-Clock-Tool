@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
-import { getState, createProcess, deleteProcess, addLocalEvent, deleteEvent, computeHappensBefore,computeConcurrentEvents } from "./api";
+import {
+  getState,
+  createProcess,
+  deleteProcess,
+  addLocalEvent,
+  deleteEvent,
+  computeHappensBefore,
+  computeConcurrentEvents,
+  sendMessage,
+} from "./api";
+
 import ProcessGrid from "./components/ProcessGrid";
+import LamportDiagram from "./components/LamportDiagram";
 import SendPanel from "./components/SendPanel";
-import { sendMessage } from "./api";
 
 export default function App() {
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // NEW: track which process is hovered in the right panel
+  const [hoveredPid, setHoveredPid] = useState(null);
 
   const loadState = async () => {
     setError("");
@@ -83,7 +96,7 @@ export default function App() {
       setBusy(false);
     }
   };
- 
+
   const handleComputeConcurrent = async () => {
     setBusy(true);
     try {
@@ -97,68 +110,122 @@ export default function App() {
     }
   };
 
-  
-const handleSendMessage = async (fromPid, toPid) => {
-  setBusy(true);
-  try {
-    const data = await sendMessage(fromPid, toPid);
-    if (!data.ok) throw new Error(data.error);
-    await loadState();
-  } catch (e) {
-    setError(String(e));
-  } finally {
-    setBusy(false);
-  }
-};
+  const handleSendMessage = async (fromPid, toPid) => {
+    setBusy(true);
+    try {
+      const data = await sendMessage(fromPid, toPid);
+      if (!data.ok) throw new Error(data.error);
+      await loadState();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
-      <h1>Vector Clock Tool</h1>
+      <h1 style={{ marginBottom: 8 }}>Vector Clock Tool</h1>
 
-      <button onClick={handleAddProcess} disabled={busy}>
-        Add process
-      </button>
-      <button
-        onClick={handleComputeHappensBefore}
-        disabled={busy || !state || state.events.length === 0}
-        style={{ marginLeft: 12 }}
-      >
-        Compute happens-before
-      </button>
+      {error && <div style={{ color: "crimson", marginBottom: 12 }}>{error}</div>}
 
-      <button
-        onClick={handleComputeConcurrent}
-        disabled={busy || !state || state.events.length === 0}
-        style={{ marginLeft: 12 }}
-      >
-        Compute concurrent events
-      </button>
-
-      {error && <div style={{ color: "crimson" }}>{error}</div>}
+      {/* Top controls */}
       {state && (
-        <SendPanel
-          processes={state.processes}
-          onSend={handleSendMessage}
-          busy={busy}
-        />
+        <div style={{ marginBottom: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <SendPanel processes={state.processes} onSend={handleSendMessage} busy={busy} />
+        </div>
       )}
 
       {state && (
-        
-        <ProcessGrid
-          processes={state.processes}
-          events={state.events}
-          busy={busy}
-          onDelete={handleDeleteProcess}
-          onAddEvent={handleAddEvent}
-          onDeleteEvent={handleDeleteEvent}
-        />
-      )}
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 2.5fr 1fr",
+      gap: 16,
+      alignItems: "start",
+    }}
+  >
+    {/* LEFT: HB + CO */}
+    <div>
+      <div
+        style={{
+          border: "1px solid rgba(0,0,0,0.2)",
+          borderRadius: 12,
+          padding: 12,
+          background: "rgba(0,0,0,0.03)",
+        }}
+      >
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>
+          Happens-before
+        </div>
 
-      <pre style={{ background: "#0f0101cd", padding: 12, borderRadius: 8 }}>
-        {JSON.stringify(state, null, 2)}
-      </pre>
+        {state.hb?.length ? (
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {state.hb.map((e, idx) => (
+              <li key={idx}>
+                {e.from} → {e.to}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div style={{ opacity: 0.6 }}>Not computed yet.</div>
+        )}
+
+        <hr style={{ margin: "16px 0", opacity: 0.2 }} />
+
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>
+          Concurrent pairs
+        </div>
+
+        {state.co?.length ? (
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {state.co.map((p, idx) => (
+              <li key={idx}>
+                {(p.event1 ?? p.a)} ‖ {(p.event2 ?? p.b)}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div style={{ opacity: 0.6 }}>Not computed yet.</div>
+        )}
+      </div>
+    </div>
+
+    {/* MIDDLE: Lamport Diagram */}
+    <div>
+      <LamportDiagram
+        processes={state.processes}
+        events={state.events}
+        onAddProcess={handleAddProcess}
+        canAdd={!busy}
+        highlightProcess={hoveredPid}
+      />
+    </div>
+
+    {/* RIGHT: Process Cards */}
+    <div>
+      <div style={{ fontWeight: 600, marginBottom: 8 }}>
+        Processes
+      </div>
+
+      <ProcessGrid
+        processes={state.processes}
+        events={state.events}
+        busy={busy}
+        onDelete={handleDeleteProcess}
+        onAddEvent={handleAddEvent}
+        onDeleteEvent={handleDeleteEvent}
+        onHoverProcess={setHoveredPid}
+      />
+    </div>
+  </div>
+)}
+
+      {state && (
+        <pre style={{ background: "#0f0101cd", padding: 12, borderRadius: 8, marginTop: 16 }}>
+          {JSON.stringify(state, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
-
