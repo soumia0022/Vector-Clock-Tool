@@ -199,6 +199,7 @@ export default function App() {
         onAddProcess={handleAddProcess}
         canAdd={!busy}
         highlightProcess={hoveredPid}
+        animateMessages={true}
       />
     </div>
 
