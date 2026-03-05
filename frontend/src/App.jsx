@@ -15,6 +15,10 @@ import LamportDiagram from "./components/LamportDiagram";
 import SendPanel from "./components/SendPanel";
 
 export default function App() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playIndex, setPlayIndex] = useState(0);
+  const [speedMs, setSpeedMs] = useState(700); // ms per step
+
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -31,6 +35,34 @@ export default function App() {
   useEffect(() => {
     loadState().catch((e) => setError(String(e)));
   }, []);
+
+  useEffect(() => {
+  if (!state) return;
+  // start at end by default, or start at 0 if you prefer
+  setPlayIndex(state.events.length);
+}, [state]);
+
+  useEffect(() => {
+  if (!state) return;
+  if (!isPlaying) return;
+
+  const max = state.events.length;
+
+  const t = setInterval(() => {
+    setPlayIndex((i) => {
+      if (i >= max) {
+        // stop at the end
+        setIsPlaying(false);
+        return max;
+      }
+      return i + 1;
+    });
+  }, speedMs);
+
+  return () => clearInterval(t);
+}, [isPlaying, speedMs, state]);
+
+  const visibleEvents = state ? state.events.slice(0, playIndex) : [];
 
   const handleAddProcess = async () => {
     setBusy(true);
@@ -135,6 +167,61 @@ export default function App() {
           <SendPanel processes={state.processes} onSend={handleSendMessage} busy={busy} />
         </div>
       )}
+      {state && (
+  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+    <button
+      onClick={() => setPlayIndex(0)}
+      disabled={busy || state.events.length === 0}
+    >
+      Reset
+    </button>
+
+    <button
+      onClick={() => setPlayIndex((i) => Math.max(0, i - 1))}
+      disabled={busy || state.events.length === 0 || playIndex === 0}
+    >
+      Step ◀
+    </button>
+
+    <button
+      onClick={() => setIsPlaying((p) => !p)}
+      disabled={busy || state.events.length === 0}
+    >
+      {isPlaying ? "Pause" : "Play"}
+    </button>
+
+    <button
+      onClick={() => setPlayIndex((i) => Math.min(state.events.length, i + 1))}
+      disabled={busy || state.events.length === 0 || playIndex >= state.events.length}
+    >
+      Step ▶
+    </button>
+
+    <button
+      onClick={() => setPlayIndex(state.events.length)}
+      disabled={busy || state.events.length === 0}
+    >
+      Jump to end
+    </button>
+
+    <div style={{ marginLeft: 10, display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 12, opacity: 0.75 }}>Speed</span>
+      <input
+        type="range"
+        min="150"
+        max="1500"
+        step="50"
+        value={speedMs}
+        onChange={(e) => setSpeedMs(Number(e.target.value))}
+      />
+      <span style={{ fontSize: 12, opacity: 0.75 }}>{speedMs}ms</span>
+    </div>
+
+    <div style={{ marginLeft: 10, fontSize: 12, opacity: 0.75 }}>
+      {playIndex}/{state.events.length} events
+    </div>
+  </div>
+)}
 
       {state && (
   <div
@@ -195,11 +282,12 @@ export default function App() {
     <div>
       <LamportDiagram
         processes={state.processes}
-        events={state.events}
+        events={visibleEvents}
         onAddProcess={handleAddProcess}
         canAdd={!busy}
         highlightProcess={hoveredPid}
         animateMessages={true}
+        playIndex={playIndex}
       />
     </div>
 

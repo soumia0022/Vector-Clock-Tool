@@ -9,7 +9,9 @@ export default function LamportDiagram({
   canAdd = true,
   highlightProcess = null,
   animateMessages = true,
+  playIndex,
 }) {
+  const prevPlayIndexRef = useRef(0);
   const svgRef = useRef(null);
   const seenMsgIdsRef = useRef(new Set()); // remembers which messages we've already animated
 
@@ -159,31 +161,32 @@ export default function LamportDiagram({
 
     linkSel.append("title").text((d) => `message: ${d.id}\n${d.source.id} → ${d.target.id}`);
 
-    // ---- animate NEW message links (moving dot along the path) ----
-    if (animateMessages) {
-      const animLayer = viewport.append("g").attr("class", "message-anim");
+    
+      // ---- animate when playback reveals a new RECEIVE ----
+if (animateMessages && typeof playIndex === "number") {
+  const prev = prevPlayIndexRef.current;
+  prevPlayIndexRef.current = playIndex;
 
-      links.forEach((lnk) => {
-        const msgId = lnk.id;
-        const isNew = !seenMsgIdsRef.current.has(msgId);
+  // only animate when stepping forward
+  if (playIndex > prev) {
+    const newlyVisible = nodes[playIndex - 1]; // last revealed event
 
-        if (!isNew) return;
-        seenMsgIdsRef.current.add(msgId);
+    if (newlyVisible && newlyVisible.type === "RECEIVE" && newlyVisible.message_id) {
+      const msgId = newlyVisible.message_id;
 
-        // Find the rendered path for this link so we can measure length
-        const pathNode = linkG.selectAll("path.link").filter((d) => d.id === msgId).node();
-        if (!pathNode) return;
-
+      // Find the path for this message
+      const pathNode = linkG.selectAll("path.link").filter((d) => d.id === msgId).node();
+      if (pathNode) {
         const total = pathNode.getTotalLength();
 
-        // The travelling "packet"
+        const animLayer = viewport.append("g").attr("class", "message-anim");
+
         const dot = animLayer
           .append("circle")
           .attr("r", 6)
           .attr("fill", "currentColor")
           .attr("opacity", 0.85);
 
-        // animate for ~900ms
         dot
           .transition()
           .duration(900)
@@ -198,8 +201,11 @@ export default function LamportDiagram({
           .duration(200)
           .attr("opacity", 0)
           .remove();
-      });
+      }
     }
+  }
+}
+    
 
     // ---- events ----
     const evg = viewport.append("g").attr("class", "events");
@@ -243,7 +249,7 @@ export default function LamportDiagram({
         const msg = d.message_id ? `\nmessage: ${d.message_id}` : "";
         return `${d.id}\nprocess: ${d.process}\ntype: ${d.type}\nts: ${ts}${msg}`;
       });
-  }, [layout, height, processes, highlightProcess, animateMessages]);
+  }, [layout, height, processes, highlightProcess, animateMessages, playIndex]);
 
   const buttonDisabled = !canAdd || typeof onAddProcess !== "function";
 
