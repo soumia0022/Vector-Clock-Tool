@@ -7,8 +7,11 @@ export default function LamportDiagram({
   height = 520,
   onAddProcess,
   canAdd = true,
+  highlightProcess = null,
+  animateMessages = true,
 }) {
   const svgRef = useRef(null);
+  const seenMsgIdsRef = useRef(new Set()); // remembers which messages we've already animated
 
   const layout = useMemo(() => {
     const margin = { top: 40, right: 70, bottom: 30, left: 40 };
@@ -40,10 +43,7 @@ export default function LamportDiagram({
 
     const { width, margin, x, nodes } = layout;
 
-    svg
-      .attr("viewBox", `0 0 ${width} ${height}`)
-      .attr("width", "100%")
-      .attr("height", height);
+    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
 
     // ---- defs (arrowhead) ----
     const defs = svg.append("defs");
@@ -96,8 +96,10 @@ export default function LamportDiagram({
       .attr("y1", margin.top)
       .attr("y2", height - 20)
       .attr("stroke", "currentColor")
-      .attr("opacity", 0.25)
-      .attr("stroke-width", 2);
+      .attr("opacity", (d) =>
+        highlightProcess ? (d === highlightProcess ? 0.85 : 0.12) : 0.25
+      )
+      .attr("stroke-width", (d) => (highlightProcess && d === highlightProcess ? 4 : 2));
 
     lanes
       .selectAll("text")
@@ -107,11 +109,11 @@ export default function LamportDiagram({
       .attr("y", margin.top - 12)
       .attr("text-anchor", "middle")
       .attr("fill", "currentColor")
-      .attr("opacity", 0.85)
+      .attr("opacity", highlightProcess ? 0.9 : 0.85)
       .attr("font-size", 13)
       .text((d) => d);
 
-    // ---- message links ----
+    // ---- message links (SEND -> RECEIVE) ----
     const sendByMsg = new Map();
     const recvByMsg = new Map();
 
@@ -143,10 +145,11 @@ export default function LamportDiagram({
       return `M ${s.x} ${s.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${t.x} ${t.y}`;
     };
 
-    const link = linkG
-      .selectAll("path")
+    const linkSel = linkG
+      .selectAll("path.link")
       .data(links, (d) => d.id)
       .join("path")
+      .attr("class", "link")
       .attr("d", (d) => curvedPath(d.source, d.target))
       .attr("fill", "none")
       .attr("stroke", "currentColor")
@@ -154,7 +157,49 @@ export default function LamportDiagram({
       .attr("stroke-width", 2)
       .attr("marker-end", "url(#arrowhead)");
 
-    link.append("title").text((d) => `message: ${d.id}\n${d.source.id} → ${d.target.id}`);
+    linkSel.append("title").text((d) => `message: ${d.id}\n${d.source.id} → ${d.target.id}`);
+
+    // ---- animate NEW message links (moving dot along the path) ----
+    if (animateMessages) {
+      const animLayer = viewport.append("g").attr("class", "message-anim");
+
+      links.forEach((lnk) => {
+        const msgId = lnk.id;
+        const isNew = !seenMsgIdsRef.current.has(msgId);
+
+        if (!isNew) return;
+        seenMsgIdsRef.current.add(msgId);
+
+        // Find the rendered path for this link so we can measure length
+        const pathNode = linkG.selectAll("path.link").filter((d) => d.id === msgId).node();
+        if (!pathNode) return;
+
+        const total = pathNode.getTotalLength();
+
+        // The travelling "packet"
+        const dot = animLayer
+          .append("circle")
+          .attr("r", 6)
+          .attr("fill", "currentColor")
+          .attr("opacity", 0.85);
+
+        // animate for ~900ms
+        dot
+          .transition()
+          .duration(900)
+          .ease(d3.easeCubicInOut)
+          .tween("pathTween", () => {
+            return (t) => {
+              const p = pathNode.getPointAtLength(t * total);
+              dot.attr("cx", p.x).attr("cy", p.y);
+            };
+          })
+          .transition()
+          .duration(200)
+          .attr("opacity", 0)
+          .remove();
+      });
+    }
 
     // ---- events ----
     const evg = viewport.append("g").attr("class", "events");
@@ -176,14 +221,18 @@ export default function LamportDiagram({
       .select("circle")
       .attr("r", 7)
       .attr("fill", "currentColor")
-      .attr("opacity", 0.9);
+      .attr("opacity", (d) =>
+        highlightProcess ? (d.process === highlightProcess ? 0.95 : 0.25) : 0.9
+      );
 
     node
       .select("text")
       .attr("x", 12)
       .attr("y", 4)
       .attr("fill", "currentColor")
-      .attr("opacity", 0.9)
+      .attr("opacity", (d) =>
+        highlightProcess ? (d.process === highlightProcess ? 0.95 : 0.25) : 0.9
+      )
       .attr("font-size", 12)
       .text((d) => `${d.id} (${d.type})`);
 
@@ -194,7 +243,7 @@ export default function LamportDiagram({
         const msg = d.message_id ? `\nmessage: ${d.message_id}` : "";
         return `${d.id}\nprocess: ${d.process}\ntype: ${d.type}\nts: ${ts}${msg}`;
       });
-  }, [layout, height, processes]);
+  }, [layout, height, processes, highlightProcess, animateMessages]);
 
   const buttonDisabled = !canAdd || typeof onAddProcess !== "function";
 
@@ -209,7 +258,6 @@ export default function LamportDiagram({
         position: "relative",
       }}
     >
-      {/* Real HTML button overlay */}
       <button
         type="button"
         onClick={onAddProcess}
@@ -218,7 +266,7 @@ export default function LamportDiagram({
         title={buttonDisabled ? "Busy…" : "Add process"}
         style={{
           position: "absolute",
-          top: 52, // aligns near lane label row
+          top: 52,
           right: 22,
           width: 34,
           height: 34,
@@ -241,7 +289,7 @@ export default function LamportDiagram({
       <svg ref={svgRef} />
 
       <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
-        Tip: drag to pan • scroll to zoom • click “+” to add a process
+        Tip: drag to pan • scroll to zoom • messages animate when new SEND/RECEIVE appears
       </div>
     </div>
   );
