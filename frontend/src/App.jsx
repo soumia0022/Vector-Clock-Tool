@@ -17,7 +17,8 @@ import SendPanel from "./components/SendPanel";
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playIndex, setPlayIndex] = useState(0);
-  const [speedMs, setSpeedMs] = useState(700); // ms per step
+  const baseSpeed = 700; // base step speed
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
 
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -57,10 +58,10 @@ export default function App() {
       }
       return i + 1;
     });
-  }, speedMs);
+  }, baseSpeed / speedMultiplier);
 
   return () => clearInterval(t);
-}, [isPlaying, speedMs, state]);
+}, [isPlaying, speedMultiplier, state]);
 
   const visibleEvents = state ? state.events.slice(0, playIndex) : [];
 
@@ -204,18 +205,27 @@ export default function App() {
       Jump to end
     </button>
 
-    <div style={{ marginLeft: 10, display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 12, opacity: 0.75 }}>Speed</span>
-      <input
-        type="range"
-        min="150"
-        max="1500"
-        step="50"
-        value={speedMs}
-        onChange={(e) => setSpeedMs(Number(e.target.value))}
-      />
-      <span style={{ fontSize: 12, opacity: 0.75 }}>{speedMs}ms</span>
-    </div>
+    <div style={{ marginLeft: 10, display: "flex", alignItems: "center", gap: 6 }}>
+  <span style={{ fontSize: 12, opacity: 0.75 }}>Speed</span>
+
+  {[0.5, 0.75, 1, 1.5, 2].map((s) => (
+    <button
+      key={s}
+      onClick={() => setSpeedMultiplier(s)}
+      style={{
+        padding: "2px 8px",
+        fontSize: 12,
+        borderRadius: 6,
+        border: "1px solid rgba(0,0,0,0.2)",
+        background: speedMultiplier === s ? "#333" : "transparent",
+        color: speedMultiplier === s ? "white" : "inherit",
+        cursor: "pointer",
+      }}
+    >
+      x{s}
+    </button>
+  ))}
+</div>
 
     <div style={{ marginLeft: 10, fontSize: 12, opacity: 0.75 }}>
       {playIndex}/{state.events.length} events
