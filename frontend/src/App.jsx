@@ -65,6 +65,11 @@ export default function App() {
 
   const visibleEvents = state ? state.events.slice(0, playIndex) : [];
 
+  const progressPercent =
+  state && state.events.length > 0
+    ? (playIndex / state.events.length) * 100
+    : 0;
+
   const handleAddProcess = async () => {
     setBusy(true);
     try {
@@ -155,8 +160,10 @@ export default function App() {
       setBusy(false);
     }
   };
+  
 
   return (
+    
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
       <h1 style={{ marginBottom: 8 }}>Vector Clock Tool</h1>
 
@@ -229,6 +236,44 @@ export default function App() {
 
     <div style={{ marginLeft: 10, fontSize: 12, opacity: 0.75 }}>
       {playIndex}/{state.events.length} events
+    </div>
+  </div>
+)}
+{state && (
+  <div style={{ marginBottom: 16 }}>
+    <div
+      style={{
+        width: "100%",
+        height: 10,
+        background: "rgba(0,0,0,0.12)",
+        borderRadius: 999,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: `${progressPercent}%`,
+          height: "100%",
+          background: "rgba(0,0,0,0.75)",
+          borderRadius: 999,
+          transition: isPlaying ? "width 0.2s linear" : "width 0.2s ease",
+        }}
+      />
+    </div>
+
+    <div
+      style={{
+        marginTop: 6,
+        fontSize: 12,
+        opacity: 0.75,
+        display: "flex",
+        justifyContent: "space-between",
+      }}
+    >
+      <span>Progress</span>
+      <span>
+        {playIndex} / {state.events.length} events
+      </span>
     </div>
   </div>
 )}
