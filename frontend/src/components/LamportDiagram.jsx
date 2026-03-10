@@ -26,18 +26,46 @@ export default function LamportDiagram({
       .range([margin.left, margin.left + innerW])
       .padding(0.5);
 
-    const rowGap = 50;
     const y = (idx) => margin.top + idx * rowGap;
 
-    const nodes = events.map((ev, idx) => ({
-      ...ev,
-      x: x(ev.process),
-      y: y(idx),
-      idx,
-    }));
+    const rowGap = 60;
+
+// Track the last ACTUAL y used on each process
+const lastYByProcess = new Map(processes.map((p) => [p, margin.top - rowGap]));
+const sendYByMessage = new Map();
+
+const nodes = events.map((ev) => {
+  const prevY = lastYByProcess.get(ev.process) ?? (margin.top - rowGap);
+
+  // default: next event goes one row below the previous event on this process
+  let y = prevY + rowGap;
+
+  if (ev.type === "SEND" && ev.message_id) {
+    sendYByMessage.set(ev.message_id, y);
+  }
+
+  if (ev.type === "RECEIVE" && ev.message_id && sendYByMessage.has(ev.message_id)) {
+    const sendY = sendYByMessage.get(ev.message_id);
+
+    // receive must appear below both:
+    // 1) previous event on this process
+    // 2) the corresponding send event
+    y = Math.max(y, sendY + rowGap);
+  }
+
+  // remember the ACTUAL y used
+  lastYByProcess.set(ev.process, y);
+
+  return {
+    ...ev,
+    x: x(ev.process),
+    y,
+  };
+});
 
     return { width, margin, x, nodes };
   }, [processes, events]);
+  
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
