@@ -8,6 +8,8 @@ import {
   computeHappensBefore,
   computeConcurrentEvents,
   sendMessage,
+  getTheoryQuestion,
+  checkTheoryAnswer,
 } from "./api";
 
 import ProcessGrid from "./components/ProcessGrid";
@@ -18,6 +20,10 @@ export default function App() {
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  //quiz state
+  const [quizQuestion, setQuizQuestion] = useState(null);
+  const [quizResult, setQuizResult] = useState("");
 
   // NEW: track which process is hovered in the right panel
   const [hoveredPid, setHoveredPid] = useState(null);
@@ -123,6 +129,40 @@ export default function App() {
     }
   };
 
+  const handleGenerateQuiz = async () => {
+  setBusy(true);
+  setQuizResult("");
+  try {
+    const data = await getTheoryQuestion();
+    if (!data.ok) throw new Error(data.error);
+    setQuizQuestion(data.question);
+  } catch (e) {
+    setError(String(e));
+  } finally {
+    setBusy(false);
+  }
+};
+
+const handleCheckQuizAnswer = async (selectedAnswer) => {
+  if (!quizQuestion) return;
+
+  setBusy(true);
+  try {
+    const data = await checkTheoryAnswer(quizQuestion.id, selectedAnswer);
+    if (!data.ok) throw new Error(data.error);
+
+    if (data.correct) {
+      setQuizResult("✅ Correct");
+    } else {
+      setQuizResult(`❌ Incorrect. Correct answer: ${data.correct_answer}`);
+    }
+  } catch (e) {
+    setError(String(e));
+  } finally {
+    setBusy(false);
+  }
+};
+
   return (
     <div style={{ padding: 20, fontFamily: "system-ui" }}>
       <h1 style={{ marginBottom: 8 }}>Vector Clock Tool</h1>
@@ -133,8 +173,42 @@ export default function App() {
       {state && (
         <div style={{ marginBottom: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <SendPanel processes={state.processes} onSend={handleSendMessage} busy={busy} />
+          <button onClick={handleGenerateQuiz} disabled={busy}>
+           Generate theory quiz
+          </button>
         </div>
+        
       )}
+
+      {quizQuestion && (
+  <div
+    style={{
+      border: "1px solid #ccc",
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      background: "#8779f5",
+    }}
+  >
+    <h3>Quiz Question</h3>
+    <p>{quizQuestion.question}</p>
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {quizQuestion.options.map((option) => (
+        <button
+          key={option}
+          onClick={() => handleCheckQuizAnswer(option)}
+          disabled={busy}
+          style={{ textAlign: "left" }}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+
+    {quizResult && <p style={{ marginTop: 12 }}>{quizResult}</p>}
+  </div>
+)}
 
       {state && (
   <div
