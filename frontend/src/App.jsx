@@ -242,13 +242,22 @@ export default function App() {
 {state && (
   <div style={{ marginBottom: 16 }}>
     <div
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        const nextIndex = Math.round(ratio * state.events.length);
+        setIsPlaying(false);
+        setPlayIndex(nextIndex);
+      }}
       style={{
         width: "100%",
         height: 10,
         background: "rgba(0,0,0,0.12)",
         borderRadius: 999,
         overflow: "hidden",
+        cursor: "pointer",
       }}
+      title="Jump to a point in the replay"
     >
       <div
         style={{
