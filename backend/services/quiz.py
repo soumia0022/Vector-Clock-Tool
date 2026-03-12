@@ -1,4 +1,48 @@
 import random
+from state import STATE
+from services.analysis import compute_happens_before
+
+
+def get_random_hb_question():
+    events = STATE["events"]
+
+    if len(events) < 2:
+        raise ValueError("Need at least 2 events to generate a diagram quiz question")
+
+    # make sure happens-before is up to date
+    hb_edges = compute_happens_before()
+
+    a, b = random.sample(events, 2)
+
+    correct_answer = any(
+        edge["from"] == a["id"] and edge["to"] == b["id"]
+        for edge in hb_edges
+    )
+
+    return {
+        "type": "diagram_hb",
+        "question": f"Does {a['id']} happen before {b['id']}?",
+        "event_a": a["id"],
+        "event_b": b["id"],
+        "options": ["Yes", "No"],
+        "answer": "Yes" if correct_answer else "No",
+    }
+
+
+def check_hb_question_answer(event_a: str, event_b: str, selected_answer: str):
+    hb_edges = compute_happens_before()
+
+    correct_answer = any(
+        edge["from"] == event_a and edge["to"] == event_b
+        for edge in hb_edges
+    )
+
+    expected = "Yes" if correct_answer else "No"
+
+    return {
+        "correct": selected_answer == expected,
+        "correct_answer": expected,
+    }
 
 THEORY_QUESTIONS = [
     {
@@ -45,6 +89,68 @@ THEORY_QUESTIONS = [
         ],
         "answer": "When neither happened before the other"
     }
+    ,{
+    "id": 5,
+    "question": "A local event in a vector clock increments only the component of the process where the event occurred.",
+    "options": ["True", "False"],
+    "answer": "True"
+    },
+    {
+        "id": 6,
+        "question": "When a process sends a message, it increments its own vector clock component.",
+        "options": ["True", "False"],
+        "answer": "True"
+    },
+    {
+        "id": 7,
+        "question": "When a process receives a message, it sets its vector clock equal to the sender's clock.",
+        "options": ["True", "False"],
+        "answer": "False"
+    },
+    {
+        "id": 8,
+        "question": "Two events are concurrent if neither event happens before the other.",
+        "options": ["True", "False"],
+        "answer": "True"
+    },
+    {
+        "id": 9,
+        "question": "Vector clocks are used to detect causal relationships between events in distributed systems.",
+        "options": ["True", "False"],
+        "answer": "True"
+    },
+    {
+        "id": 10,
+        "question": "If event A happens before event B, then the vector timestamp of A must be less than or equal to B in every component and strictly less in at least one component.",
+        "options": ["True", "False"],
+        "answer": "True"
+    },
+    {
+        "id": 11,
+        "question": "Two events with identical vector timestamps are always concurrent.",
+        "options": ["True", "False"],
+        "answer": "False"
+    },
+    {
+        "id": 12,
+        "question": "Vector clocks can determine the exact physical time when an event occurred.",
+        "options": ["True", "False"],
+        "answer": "False"
+    },
+    {
+        "id": 13,
+        "question": "If two events occur on the same process, they cannot be concurrent.",
+        "options": ["True", "False"],
+        "answer": "True"
+    },
+    {
+        "id": 14,
+        "question": "The length of a vector clock equals the number of processes in the system.",
+        "options": ["True", "False"],
+        "answer": "True"
+    }
+
+    
 ]
 
 
@@ -69,4 +175,48 @@ def check_theory_answer(question_id: int, selected_answer: str):
     return {
         "correct": correct,
         "correct_answer": question["answer"]
+    }
+
+
+
+
+def get_random_hb_question():
+    events = STATE["events"]
+
+    if len(events) < 2:
+        raise ValueError("Need at least 2 events to generate a diagram quiz question")
+
+    # make sure happens-before is up to date
+    hb_edges = compute_happens_before()
+
+    a, b = random.sample(events, 2)
+
+    correct_answer = any(
+        edge["from"] == a["id"] and edge["to"] == b["id"]
+        for edge in hb_edges
+    )
+
+    return {
+        "type": "diagram_hb",
+        "question": f"Does {a['id']} happen before {b['id']}?",
+        "event_a": a["id"],
+        "event_b": b["id"],
+        "options": ["Yes", "No"],
+        "answer": "Yes" if correct_answer else "No",
+    }
+
+
+def check_hb_question_answer(event_a: str, event_b: str, selected_answer: str):
+    hb_edges = compute_happens_before()
+
+    correct_answer = any(
+        edge["from"] == event_a and edge["to"] == event_b
+        for edge in hb_edges
+    )
+
+    expected = "Yes" if correct_answer else "No"
+
+    return {
+        "correct": selected_answer == expected,
+        "correct_answer": expected,
     }

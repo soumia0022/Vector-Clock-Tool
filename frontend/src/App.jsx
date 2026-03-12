@@ -10,6 +10,8 @@ import {
   sendMessage,
   getTheoryQuestion,
   checkTheoryAnswer,
+  getDiagramHBQuestion,
+  checkDiagramHBAnswer,
 } from "./api";
 
 import ProcessGrid from "./components/ProcessGrid";
@@ -24,6 +26,9 @@ export default function App() {
   //quiz state
   const [quizQuestion, setQuizQuestion] = useState(null);
   const [quizResult, setQuizResult] = useState("");
+
+  const [diagramQuizQuestion, setDiagramQuizQuestion] = useState(null);
+  const [diagramQuizResult, setDiagramQuizResult] = useState("");
 
   // NEW: track which process is hovered in the right panel
   const [hoveredPid, setHoveredPid] = useState(null);
@@ -116,6 +121,45 @@ export default function App() {
     }
   };
 
+  const handleGenerateDiagramQuiz = async () => {
+  setBusy(true);
+  setDiagramQuizResult("");
+  try {
+    const data = await getDiagramHBQuestion();
+    if (!data.ok) throw new Error(data.error);
+    setDiagramQuizQuestion(data.question);
+  } catch (e) {
+    setError(String(e));
+  } finally {
+    setBusy(false);
+  }
+};
+
+const handleCheckDiagramQuizAnswer = async (selectedAnswer) => {
+  if (!diagramQuizQuestion) return;
+
+  setBusy(true);
+  try {
+    const data = await checkDiagramHBAnswer(
+      diagramQuizQuestion.event_a,
+      diagramQuizQuestion.event_b,
+      selectedAnswer
+    );
+
+    if (!data.ok) throw new Error(data.error);
+
+    if (data.correct) {
+      setDiagramQuizResult("✅ Correct");
+    } else {
+      setDiagramQuizResult(`❌ Incorrect. Correct answer: ${data.correct_answer}`);
+    }
+  } catch (e) {
+    setError(String(e));
+  } finally {
+    setBusy(false);
+  }
+  };
+
   const handleSendMessage = async (fromPid, toPid) => {
     setBusy(true);
     try {
@@ -176,9 +220,45 @@ const handleCheckQuizAnswer = async (selectedAnswer) => {
           <button onClick={handleGenerateQuiz} disabled={busy}>
            Generate theory quiz
           </button>
+          <button
+            onClick={handleGenerateDiagramQuiz}
+            disabled={busy || !state || state.events.length < 2}
+          >
+            Generate diagram quiz
+          </button>
         </div>
         
+        
       )}
+
+    {diagramQuizQuestion && (
+  <div
+    style={{
+      border: "1px solid #ccc",
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+      background: "#464c4e",
+    }}
+  >
+    <h3>Diagram Quiz</h3>
+    <p>{diagramQuizQuestion.question}</p>
+
+    <div style={{ display: "flex", gap: 8 }}>
+      {diagramQuizQuestion.options.map((option) => (
+        <button
+          key={option}
+          onClick={() => handleCheckDiagramQuizAnswer(option)}
+          disabled={busy}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+
+    {diagramQuizResult && <p style={{ marginTop: 12 }}>{diagramQuizResult}</p>}
+  </div>
+)}
 
       {quizQuestion && (
   <div
