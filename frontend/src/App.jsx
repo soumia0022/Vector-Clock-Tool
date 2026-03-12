@@ -231,14 +231,14 @@ const handleCheckQuizAnswer = async (selectedAnswer) => {
         
       )}
 
-    {diagramQuizQuestion && (
+      {diagramQuizQuestion && (
   <div
     style={{
       border: "1px solid #ccc",
       borderRadius: 8,
       padding: 16,
       marginBottom: 16,
-      background: "#464c4e",
+      background: "#eef6ff",
     }}
   >
     <h3>Diagram Quiz</h3>
@@ -257,8 +257,16 @@ const handleCheckQuizAnswer = async (selectedAnswer) => {
     </div>
 
     {diagramQuizResult && <p style={{ marginTop: 12 }}>{diagramQuizResult}</p>}
+
+    <button
+      onClick={handleGenerateDiagramQuiz}
+      disabled={busy || !state || state.events.length < 2}
+      style={{ marginTop: 12 }}
+    >
+      Next diagram question
+    </button>
   </div>
-)}
+  )}
 
       {quizQuestion && (
   <div
@@ -267,7 +275,7 @@ const handleCheckQuizAnswer = async (selectedAnswer) => {
       borderRadius: 8,
       padding: 16,
       marginBottom: 16,
-      background: "#8779f5",
+      background: "#ad9cec",
     }}
   >
     <h3>Quiz Question</h3>
@@ -287,6 +295,14 @@ const handleCheckQuizAnswer = async (selectedAnswer) => {
     </div>
 
     {quizResult && <p style={{ marginTop: 12 }}>{quizResult}</p>}
+
+    <button
+      onClick={handleGenerateQuiz}
+      disabled={busy}
+      style={{ marginTop: 12 }}
+    >
+      Next theory question
+    </button>
   </div>
 )}
 
