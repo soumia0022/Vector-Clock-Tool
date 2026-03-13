@@ -18,6 +18,127 @@ import LamportDiagram from "./components/LamportDiagram";
 // Importing CSS files for styling
 import "./styles/theme.css";
 import "./styles/app.css";
+function zeroVector(length) {
+  return Array(length).fill(0);
+}
+
+function vectorsEqual(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  return a.every((value, i) => value === b[i]);
+}
+
+function vectorMax(a = [], b = []) {
+  return a.map((value, i) => Math.max(value, b[i]));
+}
+
+function findPreviousEventForProcess(events, pid, beforeIndex) {
+  for (let i = beforeIndex - 1; i >= 0; i--) {
+    if (events[i].process === pid) return events[i];
+  }
+  return null;
+}
+
+function findMatchingSendEvent(events, receiveEvent, receiveIndex) {
+  if (!receiveEvent?.message_id) return null;
+
+  for (let i = receiveIndex - 1; i >= 0; i--) {
+    const ev = events[i];
+    if (ev.type === "SEND" && ev.message_id === receiveEvent.message_id) {
+      return ev;
+    }
+  }
+  return null;
+}
+
+function getEventExplanation(state, playIndex) {
+  if (!state || playIndex <= 0 || playIndex > state.events.length) return null;
+
+  const events = state.events;
+  const currentIndex = playIndex - 1;
+  const event = events[currentIndex];
+  const processCount = state.processes.length;
+  const processIndex = state.processes.indexOf(event.process);
+
+  const previousEvent = findPreviousEventForProcess(events, event.process, currentIndex);
+  const beforeVector = previousEvent
+    ? [...previousEvent.timestamp]
+    : zeroVector(processCount);
+
+  const afterVector = [...event.timestamp];
+
+  if (event.type === "LOCAL") {
+    const expected = [...beforeVector];
+    expected[processIndex] += 1;
+
+    return {
+      title: `${event.id} — Local event on ${event.process}`,
+      rule: `${event.process} increments its own entry by 1 for a local event.`,
+      before: beforeVector,
+      after: afterVector,
+      highlightIndex: processIndex,
+      extra:
+        vectorsEqual(expected, afterVector)
+          ? `Before [${beforeVector.join(", ")}] → after [${afterVector.join(", ")}].`
+          : `Expected [${expected.join(", ")}], stored [${afterVector.join(", ")}].`,
+    };
+  }
+
+  if (event.type === "SEND") {
+    const expected = [...beforeVector];
+    expected[processIndex] += 1;
+
+    return {
+      title: `${event.id} — Send event from ${event.process}`,
+      rule: `A send is also an event, so ${event.process} increments its own entry by 1 before sending.`,
+      before: beforeVector,
+      after: afterVector,
+      highlightIndex: processIndex,
+      extra: event.message_id
+        ? `Message ${event.message_id} carries timestamp [${afterVector.join(", ")}].`
+        : `The sent message carries timestamp [${afterVector.join(", ")}].`,
+    };
+  }
+
+  if (event.type === "RECEIVE") {
+    const sendEvent = findMatchingSendEvent(events, event, currentIndex);
+    const receiverBefore = beforeVector;
+
+    if (sendEvent) {
+      const merged = vectorMax(receiverBefore, sendEvent.timestamp);
+      const expected = [...merged];
+      expected[processIndex] += 1;
+
+      return {
+        title: `${event.id} — Receive event on ${event.process}`,
+        rule: `On receive, take the element-wise max of the receiver clock and the message timestamp, then increment the receiver's own entry by 1.`,
+        before: receiverBefore,
+        after: afterVector,
+        highlightIndex: processIndex,
+        messageVector: [...sendEvent.timestamp],
+        mergedVector: merged,
+        extra: `max([${receiverBefore.join(", ")}], [${sendEvent.timestamp.join(", ")}]) = [${merged.join(", ")}], then increment ${event.process} → [${afterVector.join(", ")}].`,
+      };
+    }
+
+    return {
+      title: `${event.id} — Receive event on ${event.process}`,
+      rule: `A receive takes the max with the incoming message timestamp, then increments the receiver's own entry by 1.`,
+      before: receiverBefore,
+      after: afterVector,
+      highlightIndex: processIndex,
+      extra: `Final stored timestamp: [${afterVector.join(", ")}].`,
+    };
+  }
+
+  return {
+    title: `${event.id} — ${event.type} on ${event.process}`,
+    rule: `This event updates the vector clock.`,
+    before: beforeVector,
+    after: afterVector,
+    highlightIndex: processIndex,
+    extra: `Stored timestamp: [${afterVector.join(", ")}].`,
+  };
+}
 
 export default function App() {
   const [state, setState] = useState(null);
@@ -30,7 +151,13 @@ export default function App() {
   const [diagramQuizQuestion, setDiagramQuizQuestion] = useState(null);
   const [diagramQuizResult, setDiagramQuizResult] = useState("");
 
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playIndex, setPlayIndex] = useState(0);
+  const baseSpeed = 700;
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+
   const [hoveredPid, setHoveredPid] = useState(null);
+  const currentExplanation = getEventExplanation(state, playIndex);
 
   const loadState = async () => {
     setError("");
@@ -54,6 +181,30 @@ export default function App() {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+  if (!state) return;
+  setPlayIndex(state.events.length);
+}, [state]);
+
+useEffect(() => {
+  if (!state) return;
+  if (!isPlaying) return;
+
+  const max = state.events.length;
+
+  const t = setInterval(() => {
+    setPlayIndex((i) => {
+      if (i >= max) {
+        setIsPlaying(false);
+        return max;
+      }
+      return i + 1;
+    });
+  }, baseSpeed / speedMultiplier);
+
+  return () => clearInterval(t);
+}, [isPlaying, speedMultiplier, state]);
 
   const handleDeleteProcess = async (pid) => {
     setBusy(true);
@@ -197,6 +348,13 @@ export default function App() {
       : "result-box incorrect";
   };
 
+  const visibleEvents = state ? state.events.slice(0, playIndex) : [];
+
+  const progressPercent =
+  state && state.events.length > 0
+    ? (playIndex / state.events.length) * 100
+    : 0;
+
   return (
     <div className="app-page">
       <div className="app-container">
@@ -228,6 +386,133 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {state && (
+  <div className="playback-card">
+        {currentExplanation ? (
+      <div className="playback-explanation">
+        <div className="playback-explanation__header">
+          <h3 className="playback-explanation__title">
+            {currentExplanation.title}
+          </h3>
+          <span className="playback-explanation__step">
+            Event {playIndex} of {state.events.length}
+          </span>
+        </div>
+
+        <p className="playback-explanation__rule">
+          {currentExplanation.rule}
+        </p>
+
+        <div className="playback-explanation__extra">
+          {currentExplanation.extra}
+        </div>
+      </div>
+    ) : (
+      <div className="playback-explanation playback-explanation--empty">
+        Start playback or step through events to see how the vector clock changes.
+      </div>
+    )}
+    <div className="playback-controls">
+      <button
+        onClick={() => {
+          setIsPlaying(false);
+          setPlayIndex(0);
+        }}
+        disabled={busy || state.events.length === 0}
+        className="btn btn-outline"
+      >
+        Reset
+      </button>
+
+      <button
+        onClick={() => {
+          setIsPlaying(false);
+          setPlayIndex((i) => Math.max(0, i - 1));
+        }}
+        disabled={busy || state.events.length === 0 || playIndex === 0}
+        className="btn btn-outline"
+      >
+        Step ◀
+      </button>
+
+      <button
+        onClick={() => setIsPlaying((p) => !p)}
+        disabled={busy || state.events.length === 0}
+        className="btn btn-secondary"
+      >
+        {isPlaying ? "Pause" : "Play"}
+      </button>
+
+      <button
+        onClick={() => {
+          setIsPlaying(false);
+          setPlayIndex((i) => Math.min(state.events.length, i + 1));
+        }}
+        disabled={busy || state.events.length === 0 || playIndex >= state.events.length}
+        className="btn btn-outline"
+      >
+        Step ▶
+      </button>
+
+      <button
+        onClick={() => {
+          setIsPlaying(false);
+          setPlayIndex(state.events.length);
+        }}
+        disabled={busy || state.events.length === 0}
+        className="btn btn-outline"
+      >
+        Jump to end
+      </button>
+
+      <div className="playback-speed">
+        <span className="playback-speed__label">Speed</span>
+
+        {[0.5, 0.75, 1, 1.5, 2].map((s) => (
+          <button
+            key={s}
+            onClick={() => setSpeedMultiplier(s)}
+            className={`speed-pill ${speedMultiplier === s ? "is-active" : ""}`}
+          >
+            x{s}
+          </button>
+        ))}
+      </div>
+
+      <div className="playback-count">
+        {playIndex}/{state.events.length} events
+      </div>
+    </div>
+
+    <div
+      className="playback-progress"
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const ratio = (e.clientX - rect.left) / rect.width;
+        const nextIndex = Math.round(ratio * state.events.length);
+        setIsPlaying(false);
+        setPlayIndex(nextIndex);
+      }}
+      title="Jump to a point in the replay"
+    >
+      <div
+        className="playback-progress__bar"
+        style={{
+          width: `${progressPercent}%`,
+          transition: isPlaying ? "width 0.2s linear" : "width 0.2s ease",
+        }}
+      />
+    </div>
+
+    <div className="playback-progress__meta">
+      <span>Progress</span>
+      <span>
+        {playIndex} / {state.events.length} events
+      </span>
+    </div>
+  </div>
+)}
 
         {diagramQuizQuestion && (
           <div className="quiz-card">
@@ -356,7 +641,7 @@ export default function App() {
             <div className="diagram-card">
               <LamportDiagram
                 processes={state.processes}
-                events={state.events}
+                events={visibleEvents}
                 onAddProcess={handleAddProcess}
                 canAdd={!busy}
                 highlightProcess={hoveredPid}
