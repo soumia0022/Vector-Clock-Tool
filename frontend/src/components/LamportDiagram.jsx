@@ -10,7 +10,9 @@ export default function LamportDiagram({
   canAdd = true,
   highlightProcess = null,
   animateMessages = true,
+  playIndex,
 }) {
+  const prevPlayIndexRef = useRef(0);
   const svgRef = useRef(null);
   const seenMsgIdsRef = useRef(new Set());
 
@@ -25,18 +27,46 @@ export default function LamportDiagram({
       .range([margin.left, margin.left + innerW])
       .padding(0.5);
 
-    const rowGap = 50;
     const y = (idx) => margin.top + idx * rowGap;
 
-    const nodes = events.map((ev, idx) => ({
-      ...ev,
-      x: x(ev.process),
-      y: y(idx),
-      idx,
-    }));
+    const rowGap = 60;
+
+// Track the last ACTUAL y used on each process
+const lastYByProcess = new Map(processes.map((p) => [p, margin.top - rowGap]));
+const sendYByMessage = new Map();
+
+const nodes = events.map((ev) => {
+  const prevY = lastYByProcess.get(ev.process) ?? (margin.top - rowGap);
+
+  // default: next event goes one row below the previous event on this process
+  let y = prevY + rowGap;
+
+  if (ev.type === "SEND" && ev.message_id) {
+    sendYByMessage.set(ev.message_id, y);
+  }
+
+  if (ev.type === "RECEIVE" && ev.message_id && sendYByMessage.has(ev.message_id)) {
+    const sendY = sendYByMessage.get(ev.message_id);
+
+    // receive must appear below both:
+    // 1) previous event on this process
+    // 2) the corresponding send event
+    y = Math.max(y, sendY + rowGap);
+  }
+
+  // remember the ACTUAL y used
+  lastYByProcess.set(ev.process, y);
+
+  return {
+    ...ev,
+    x: x(ev.process),
+    y,
+  };
+});
 
     return { width, margin, x, nodes };
   }, [processes, events]);
+  
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
@@ -169,8 +199,9 @@ export default function LamportDiagram({
         const msgId = lnk.id;
         const isNew = !seenMsgIdsRef.current.has(msgId);
 
-        if (!isNew) return;
-        seenMsgIdsRef.current.add(msgId);
+  // only animate when stepping forward
+  if (playIndex > prev) {
+    const newlyVisible = nodes[playIndex - 1]; // last revealed event
 
         const pathNode = linkG
           .selectAll("path.link")
@@ -179,6 +210,9 @@ export default function LamportDiagram({
 
         if (!pathNode) return;
 
+      // Find the path for this message
+      const pathNode = linkG.selectAll("path.link").filter((d) => d.id === msgId).node();
+      if (pathNode) {
         const total = pathNode.getTotalLength();
 
         const dot = animLayer
@@ -201,8 +235,11 @@ export default function LamportDiagram({
           .duration(200)
           .attr("opacity", 0)
           .remove();
-      });
+      }
     }
+  }
+}
+    
 
     const evg = viewport.append("g").attr("class", "events");
 
@@ -245,7 +282,7 @@ export default function LamportDiagram({
         const msg = d.message_id ? `\nmessage: ${d.message_id}` : "";
         return `${d.id}\nprocess: ${d.process}\ntype: ${d.type}\nts: ${ts}${msg}`;
       });
-  }, [layout, height, processes, highlightProcess, animateMessages]);
+  }, [layout, height, processes, highlightProcess, animateMessages, playIndex]);
 
   const buttonDisabled = !canAdd || typeof onAddProcess !== "function";
 

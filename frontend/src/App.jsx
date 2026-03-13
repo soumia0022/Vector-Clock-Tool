@@ -141,6 +141,11 @@ function getEventExplanation(state, playIndex) {
 }
 
 export default function App() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playIndex, setPlayIndex] = useState(0);
+  const baseSpeed = 700; // base step speed
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -168,6 +173,39 @@ export default function App() {
   useEffect(() => {
     loadState().catch((e) => setError(String(e)));
   }, []);
+
+  useEffect(() => {
+  if (!state) return;
+  // start at end by default, or start at 0 if you prefer
+  setPlayIndex(state.events.length);
+}, [state]);
+
+  useEffect(() => {
+  if (!state) return;
+  if (!isPlaying) return;
+
+  const max = state.events.length;
+
+  const t = setInterval(() => {
+    setPlayIndex((i) => {
+      if (i >= max) {
+        // stop at the end
+        setIsPlaying(false);
+        return max;
+      }
+      return i + 1;
+    });
+  }, baseSpeed / speedMultiplier);
+
+  return () => clearInterval(t);
+}, [isPlaying, speedMultiplier, state]);
+
+  const visibleEvents = state ? state.events.slice(0, playIndex) : [];
+
+  const progressPercent =
+  state && state.events.length > 0
+    ? (playIndex / state.events.length) * 100
+    : 0;
 
   const handleAddProcess = async () => {
     setBusy(true);
@@ -296,6 +334,7 @@ useEffect(() => {
       setBusy(false);
     }
   };
+  
 
   const handleGenerateQuiz = async () => {
     setBusy(true);
@@ -356,6 +395,7 @@ useEffect(() => {
     : 0;
 
   return (
+
     <div className="app-page">
       <div className="app-container">
         <h1 className="app-heading">Vector Clock Tool</h1>
@@ -364,6 +404,8 @@ useEffect(() => {
         </p>
 
         {error && <div className="error-box">{error}</div>}
+
+
 
         <div className="toolbar-wrap">
           <div className="toolbar">
