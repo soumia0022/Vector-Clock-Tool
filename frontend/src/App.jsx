@@ -141,10 +141,6 @@ function getEventExplanation(state, playIndex) {
 }
 
 export default function App() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playIndex, setPlayIndex] = useState(0);
-  const baseSpeed = 700; // base step speed
-  const [speedMultiplier, setSpeedMultiplier] = useState(1);
 
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -200,12 +196,6 @@ export default function App() {
   return () => clearInterval(t);
 }, [isPlaying, speedMultiplier, state]);
 
-  const visibleEvents = state ? state.events.slice(0, playIndex) : [];
-
-  const progressPercent =
-  state && state.events.length > 0
-    ? (playIndex / state.events.length) * 100
-    : 0;
 
   const handleAddProcess = async () => {
     setBusy(true);

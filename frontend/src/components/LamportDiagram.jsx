@@ -10,16 +10,16 @@ export default function LamportDiagram({
   canAdd = true,
   highlightProcess = null,
   animateMessages = true,
-  playIndex,
+  playIndex = 0,
 }) {
   const prevPlayIndexRef = useRef(0);
   const svgRef = useRef(null);
-  const seenMsgIdsRef = useRef(new Set());
 
   const layout = useMemo(() => {
     const margin = { top: 40, right: 70, bottom: 30, left: 40 };
     const width = 900;
     const innerW = width - margin.left - margin.right;
+    const rowGap = 60;
 
     const x = d3
       .scalePoint()
@@ -27,52 +27,52 @@ export default function LamportDiagram({
       .range([margin.left, margin.left + innerW])
       .padding(0.5);
 
-    const y = (idx) => margin.top + idx * rowGap;
+    const lastYByProcess = new Map(
+      processes.map((p) => [p, margin.top - rowGap])
+    );
+    const sendYByMessage = new Map();
 
-    const rowGap = 60;
+    const nodes = events.map((ev) => {
+      const prevY = lastYByProcess.get(ev.process) ?? (margin.top - rowGap);
 
-// Track the last ACTUAL y used on each process
-const lastYByProcess = new Map(processes.map((p) => [p, margin.top - rowGap]));
-const sendYByMessage = new Map();
+      // Default: stack next event below previous event on same process
+      let y = prevY + rowGap;
 
-const nodes = events.map((ev) => {
-  const prevY = lastYByProcess.get(ev.process) ?? (margin.top - rowGap);
+      if (ev.type === "SEND" && ev.message_id) {
+        sendYByMessage.set(ev.message_id, y);
+      }
 
-  // default: next event goes one row below the previous event on this process
-  let y = prevY + rowGap;
+      if (
+        ev.type === "RECEIVE" &&
+        ev.message_id &&
+        sendYByMessage.has(ev.message_id)
+      ) {
+        const sendY = sendYByMessage.get(ev.message_id);
 
-  if (ev.type === "SEND" && ev.message_id) {
-    sendYByMessage.set(ev.message_id, y);
-  }
+        // Receive must be below both:
+        // 1) previous event on this process
+        // 2) matching send event
+        y = Math.max(y, sendY + rowGap);
+      }
 
-  if (ev.type === "RECEIVE" && ev.message_id && sendYByMessage.has(ev.message_id)) {
-    const sendY = sendYByMessage.get(ev.message_id);
+      lastYByProcess.set(ev.process, y);
 
-    // receive must appear below both:
-    // 1) previous event on this process
-    // 2) the corresponding send event
-    y = Math.max(y, sendY + rowGap);
-  }
-
-  // remember the ACTUAL y used
-  lastYByProcess.set(ev.process, y);
-
-  return {
-    ...ev,
-    x: x(ev.process),
-    y,
-  };
-});
+      return {
+        ...ev,
+        x: x(ev.process),
+        y,
+      };
+    });
 
     return { width, margin, x, nodes };
   }, [processes, events]);
-  
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
     const { width, margin, x, nodes } = layout;
+    const prevPlayIndex = prevPlayIndexRef.current;
 
     svg
       .attr("viewBox", `0 0 ${width} ${height}`)
@@ -105,15 +105,6 @@ const nodes = events.map((ev) => {
 
     svg.call(zoom);
     svg.on("dblclick.zoom", null);
-
-    svg
-      .append("text")
-      .attr("x", margin.left)
-      .attr("y", 22)
-      .attr("fill", "currentColor")
-      .attr("font-size", 16)
-      .attr("font-weight", 600)
-      ;
 
     const lanes = viewport.append("g").attr("class", "lanes");
 
@@ -157,7 +148,9 @@ const nodes = events.map((ev) => {
     const links = [];
     for (const [msgId, s] of sendByMsg.entries()) {
       const r = recvByMsg.get(msgId);
-      if (r) links.push({ id: msgId, source: s, target: r });
+      if (r) {
+        links.push({ id: msgId, source: s, target: r });
+      }
     }
 
     const linkG = viewport.append("g").attr("class", "message-links");
@@ -192,27 +185,22 @@ const nodes = events.map((ev) => {
       .append("title")
       .text((d) => `message: ${d.id}\n${d.source.id} → ${d.target.id}`);
 
-    if (animateMessages) {
+    if (animateMessages && playIndex > prevPlayIndex) {
       const animLayer = viewport.append("g").attr("class", "message-anim");
 
-      links.forEach((lnk) => {
-        const msgId = lnk.id;
-        const isNew = !seenMsgIdsRef.current.has(msgId);
+      // Animate only the newly revealed event(s)
+      const newlyVisibleEvents = nodes.slice(prevPlayIndex, playIndex);
 
-  // only animate when stepping forward
-  if (playIndex > prev) {
-    const newlyVisible = nodes[playIndex - 1]; // last revealed event
+      newlyVisibleEvents.forEach((ev) => {
+        if (ev.type !== "RECEIVE" || !ev.message_id) return;
 
         const pathNode = linkG
           .selectAll("path.link")
-          .filter((d) => d.id === msgId)
+          .filter((d) => d.id === ev.message_id)
           .node();
 
         if (!pathNode) return;
 
-      // Find the path for this message
-      const pathNode = linkG.selectAll("path.link").filter((d) => d.id === msgId).node();
-      if (pathNode) {
         const total = pathNode.getTotalLength();
 
         const dot = animLayer
@@ -235,11 +223,8 @@ const nodes = events.map((ev) => {
           .duration(200)
           .attr("opacity", 0)
           .remove();
-      }
+      });
     }
-  }
-}
-    
 
     const evg = viewport.append("g").attr("class", "events");
 
@@ -278,22 +263,25 @@ const nodes = events.map((ev) => {
     node
       .select("title")
       .text((d) => {
-        const ts = Array.isArray(d.timestamp) ? `[${d.timestamp.join(", ")}]` : "";
+        const ts = Array.isArray(d.timestamp)
+          ? `[${d.timestamp.join(", ")}]`
+          : "";
         const msg = d.message_id ? `\nmessage: ${d.message_id}` : "";
         return `${d.id}\nprocess: ${d.process}\ntype: ${d.type}\nts: ${ts}${msg}`;
       });
+
+    prevPlayIndexRef.current = playIndex;
   }, [layout, height, processes, highlightProcess, animateMessages, playIndex]);
 
   const buttonDisabled = !canAdd || typeof onAddProcess !== "function";
 
   return (
     <div className="lamport-diagram">
-      
-
       <svg ref={svgRef} className="lamport-diagram__svg" />
 
       <div className="lamport-diagram__tip">
-        Tip: drag to pan • scroll to zoom • messages animate when new SEND/RECEIVE appears
+        Tip: drag to pan • scroll to zoom • messages animate when new SEND/RECEIVE
+        appears
       </div>
     </div>
   );
