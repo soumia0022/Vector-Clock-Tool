@@ -1,3 +1,6 @@
+import { useState } from "react";
+import "../styles/process_card.css";
+
 export default function ProcessCard({
   pid,
   events,
@@ -6,73 +9,99 @@ export default function ProcessCard({
   onAddEvent,
   onDeleteEvent,
 }) {
-  return (
-    <div
-      style={{
-        border: "1px solid #010101",
-        borderRadius: 12,
-        padding: 16,
-        background: "#0f0101cd",
-        color: "white",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 12,
-        }}
-      >
-        <strong style={{ fontSize: 18 }}>{pid}</strong>
+  const [open, setOpen] = useState(false);
 
-        <div>
-          <button onClick={() => onAddEvent(pid)} disabled={busy}>
+  return (
+    <div className="process-card">
+      <div className="process-card__header">
+        <button
+          type="button"
+          className="process-card__toggle"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+        >
+          <span className={`process-card__chevron ${open ? "is-open" : ""}`}>
+            ▸
+          </span>
+          <span className="process-card__title-wrap">
+            <strong className="process-card__title">{pid}</strong>
+            <span className="process-card__count">
+              {events.length} event{events.length !== 1 ? "s" : ""}
+            </span>
+          </span>
+        </button>
+
+        <div className="process-card__actions">
+          <button
+            onClick={() => onAddEvent(pid)}
+            disabled={busy}
+            className="btn btn-primary process-card__button"
+          >
             + Event
           </button>
 
           <button
             onClick={() => onDelete(pid)}
             disabled={busy}
-            style={{ marginLeft: 8 }}
+            className="btn btn-outline process-card__button"
           >
             Delete
           </button>
         </div>
       </div>
 
-      {/* Events */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {events.length === 0 && (
-          <div style={{ fontSize: 14, opacity: 0.6 }}>
-            No events yet
-          </div>
-        )}
+      {open && (
+        <div className="process-card__events">
+          {events.length === 0 && (
+            <div className="process-card__empty">No events yet</div>
+          )}
 
-        {events.map((event) => (
-          <div
-            key={event.id}
-            style={{
-              padding: 8,
-              borderRadius: 8,
-              background: "#1c1c1c",
-              fontSize: 13,
-            }}
-          >
-            <div><strong>{event.id}</strong></div>
-            <div><strong>{event.type}</strong></div>
-            <div>ts: [{event.timestamp.join(", ")}]</div>
-            <button
-                onClick={() => onDeleteEvent(event.id)}
-                disabled={busy}
+          {events.map((event) => (
+            <details key={event.id} className="process-event">
+              <summary className="process-event__summary">
+                <div className="process-event__summary-left">
+                  <strong>{event.id}</strong>
+                  <span className="process-event__type">{event.type}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDeleteEvent(event.id);
+                  }}
+                  disabled={busy}
+                  className="btn btn-outline process-event__delete"
                 >
-                Delete 
-            </button>
+                  Delete
+                </button>
+              </summary>
 
-          </div>
-        ))}
-      </div>
+              <div className="process-event__body">
+                <div className="process-event__row">
+                  <span className="process-event__label">ID</span>
+                  <strong>{event.id}</strong>
+                </div>
+
+                <div className="process-event__row">
+                  <span className="process-event__label">Type</span>
+                  <strong>{event.type}</strong>
+                </div>
+
+                <div className="process-event__row">
+                  <span className="process-event__label">Process</span>
+                  <strong>{pid}</strong>
+                </div>
+
+                <div className="process-event__timestamp">
+                  ts: [{event.timestamp.join(", ")}]
+                </div>
+              </div>
+            </details>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

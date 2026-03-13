@@ -1,0 +1,58 @@
+.lamport-diagram {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 16px;
+  background: var(--card);
+  color: var(--text-dark);
+  position: relative;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
+}
+
+.lamport-diagram__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.lamport-diagram__add-button {
+  position: absolute;
+  top: 52px;
+  right: 22px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid var(--primary);
+  background: var(--card-alt);
+  color: var(--primary);
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.95;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.lamport-diagram__add-button:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.04);
+}
+
+.lamport-diagram__add-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lamport-diagram__tip {
+  font-size: 12px;
+  color: var(--muted-dark);
+  opacity: 0.9;
+  margin-top: 8px;
+}

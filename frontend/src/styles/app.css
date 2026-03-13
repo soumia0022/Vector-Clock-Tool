@@ -1,0 +1,273 @@
+.app-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-accent) 100%);
+  padding: 24px;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--text);
+}
+
+.app-container {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.app-heading {
+  margin-top: 0;
+  margin-bottom: 6px;
+  text-align: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.app-subheading {
+  text-align: center;
+  color: var(--muted);
+  margin-top: 0;
+  margin-bottom: 24px;
+  font-size: 15px;
+}
+
+.toolbar-wrap {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--secondary-hover);
+}
+
+.btn-outline {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.error-box {
+  background: rgba(220, 38, 38, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.quiz-card {
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
+}
+
+.quiz-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.theory-header {
+  color: var(--theory);
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.diagram-header {
+  color: var(--diagram);
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: var(--muted-dark);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.quiz-question {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.quiz-options-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-options-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.option-button {
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text-dark);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.option-button.min-width {
+  min-width: 100px;
+}
+
+.result-box {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.result-box.correct {
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid #bbf7d0;
+}
+
+.result-box.incorrect {
+  background: var(--error-soft);
+  color: var(--error);
+  border: 1px solid #fecaca;
+}
+
+.quiz-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 2.4fr 1.1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.side-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
+}
+
+.side-panel-title {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: var(--text-dark);
+}
+
+.section-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-dark);
+}
+
+.muted-text {
+  color: var(--muted-dark);
+  font-size: 14px;
+}
+
+.analysis-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-dark);
+  line-height: 1.7;
+}
+
+.divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.diagram-card {
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.14);
+}
+
+.debug-card {
+  background: var(--debug-bg);
+  color: var(--debug-text);
+  padding: 16px;
+  border-radius: 16px;
+  margin-top: 18px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.45;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
