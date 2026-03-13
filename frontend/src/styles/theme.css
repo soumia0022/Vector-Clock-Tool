@@ -1,0 +1,36 @@
+:root {
+  --bg: #0F172A;
+  --bg-accent: #111827;
+
+  --card: #F8FAFC;
+  --card-alt: #FFFFFF;
+  --border: #CBD5E1;
+
+  --text: #E5E7EB;
+  --text-dark: #0F172A;
+  --muted: #94A3B8;
+  --muted-dark: #475569;
+
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+
+  --secondary: #334155;
+  --secondary-hover: #1E293B;
+
+  --accent: #7C3AED;
+
+  --theory: #F59E0B;
+  --theory-soft: #FFF7ED;
+
+  --diagram: #0EA5E9;
+  --diagram-soft: #EFF6FF;
+
+  --success: #16A34A;
+  --success-soft: #F0FDF4;
+
+  --error: #DC2626;
+  --error-soft: #FEF2F2;
+
+  --debug-bg: #020617;
+  --debug-text: #CBD5E1;
+}
