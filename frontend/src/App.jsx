@@ -12,8 +12,8 @@ import {
   checkDiagramHBAnswer,
 } from "./api";
 
-import ProcessGrid from "./components/ProcessGrid";
-import LamportDiagram from "./components/LamportDiagram";
+import ProcessGrid from "./components/process/ProcessGrid";
+import LamportDiagram from "./components/diagram/LamportDiagram";
 
 // Importing CSS files for styling
 import "./styles/theme.css";
