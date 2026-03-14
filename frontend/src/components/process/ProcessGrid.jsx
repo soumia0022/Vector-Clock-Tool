@@ -1,6 +1,6 @@
 import ProcessCard from "./ProcessCard";
 import ProcessActionsCard from "./ProcessActionsCard";
-import "../styles/process_grid.css";
+import "../../styles/process_grid.css";
 
 export default function ProcessGrid({
   processes,

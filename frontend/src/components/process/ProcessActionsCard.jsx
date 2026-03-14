@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "../styles/actions.css";
+import "../../styles/actions.css";
 
 export default function ProcessActionsCard({
   processes,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
-import "../styles/lamport.css";
+import "../../styles/lamport.css";
 
 export default function LamportDiagram({
   processes = [],
