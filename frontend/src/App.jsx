@@ -15,6 +15,8 @@ import { useTheoryQuiz } from "./hooks/useTheoryQuiz";
 import { useDiagramQuiz } from "./hooks/useDiagramQuiz";
 
 import { getEventExplanation } from "./utils/eventExplanation";
+import { buildHbChains } from "./utils/hbChains";
+
 
 import "./styles/theme.css";
 import "./styles/app.css";
@@ -40,6 +42,13 @@ export default function App() {
 
   const theoryQuiz = useTheoryQuiz(setQuizError);
   const diagramQuiz = useDiagramQuiz(setQuizError);
+
+  const [activeHbChain, setActiveHbChain] = useState(null);
+
+
+  const hbChains = useMemo(() => {
+    return buildHbChains(state?.hb || []);
+  }, [state]);
 
   const currentExplanation = useMemo(() => {
     return getEventExplanation(state, playback.playIndex);
@@ -115,7 +124,12 @@ export default function App() {
 
         {state && (
           <div className="main-grid">
-            <AnalysisPanel state={state} />
+            <AnalysisPanel
+             state={state}
+             hbChains={hbChains}
+             activeHbChain={activeHbChain}
+             onHoverChain={setActiveHbChain}
+            />
 
             <div className="diagram-card">
               <LamportDiagram
@@ -126,6 +140,7 @@ export default function App() {
                 highlightProcess={hoveredPid}
                 animateMessages={true}
                 playIndex={playback.playIndex}
+                activeHbChain={activeHbChain}
               />
             </div>
 

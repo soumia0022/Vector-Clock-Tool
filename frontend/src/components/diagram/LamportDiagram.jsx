@@ -79,6 +79,7 @@ export default function LamportDiagram({
   highlightProcess = null,
   animateMessages = true,
   playIndex = 0,
+  activeHbChain = null,
 }) {
   const prevPlayIndexRef = useRef(0);
   const svgRef = useRef(null);
@@ -141,6 +142,15 @@ export default function LamportDiagram({
       playIndex > 0 && playIndex <= nodes.length
         ? nodes[playIndex - 1]?.id
         : null;
+
+    const activeChainEventIds = new Set(activeHbChain || []);
+    const activeChainEdges = new Set();
+
+    if (activeHbChain && activeHbChain.length > 1) {
+      for (let i = 0; i < activeHbChain.length - 1; i++) {
+        activeChainEdges.add(`${activeHbChain[i]}->${activeHbChain[i + 1]}`);
+      }
+    }
 
     svg
       .attr("viewBox", `0 0 ${width} ${height}`)
@@ -325,17 +335,82 @@ export default function LamportDiagram({
       .attr("filter", "url(#eventGlow)");
 
     node
-      .select("circle.event-outer")
-      .attr("r", (d) => getNodeRadius(d.id, currentEventId))
-      .attr("fill", (d) => getEventStyle(d.type).fill)
-      .attr("stroke", (d) => (d.id === currentEventId ? "#f8fafc" : "#111827"))
-      .attr("stroke-width", (d) => (d.id === currentEventId ? 2.6 : 1.4))
-      .attr("opacity", (d) => {
-        if (highlightProcess) {
-          return d.process === highlightProcess ? 1 : 0.28;
-        }
-        return d.id === currentEventId ? 1 : 0.95;
+  .select("circle.event-outer")
+  .attr("r", (d) => getNodeRadius(d.id, currentEventId))
+  .attr("fill", (d) => getEventStyle(d.type).fill)
+  .attr("stroke", (d) => {
+    if (d.id === currentEventId) return "#f8fafc";
+    if (activeChainEventIds.has(d.id)) return "#7c3aed";
+    return "#111827";
+  })
+  .attr("stroke-width", (d) => {
+    if (d.id === currentEventId) return 2.6;
+    if (activeChainEventIds.has(d.id)) return 3;
+    return 1.4;
+  })
+  .attr("opacity", (d) => {
+    if (activeHbChain) {
+      return activeChainEventIds.has(d.id) ? 1 : 0.18;
+    }
+    if (highlightProcess) {
+      return d.process === highlightProcess ? 1 : 0.28;
+    }
+    return d.id === currentEventId ? 1 : 0.95;
+  });
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+
+const hbOverlay = viewport.append("g").attr("class", "hb-overlay");
+
+if (activeHbChain && activeHbChain.length > 1) {
+  const chainSegments = [];
+
+  for (let i = 0; i < activeHbChain.length - 1; i++) {
+    const fromId = activeHbChain[i];
+    const toId = activeHbChain[i + 1];
+    const source = nodeById.get(fromId);
+    const target = nodeById.get(toId);
+
+    if (source && target) {
+      chainSegments.push({
+        id: `${fromId}->${toId}`,
+        source,
+        target,
       });
+    }
+  }
+
+  const buildSegmentPath = (source, target) => {
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+
+    // Same process: straight line
+    if (source.process === target.process) {
+      return `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+    }
+
+    // Different process: curved line
+    const c1x = source.x + dx * 0.25;
+    const c1y = source.y + dy * 0.25;
+    const c2x = source.x + dx * 0.75;
+    const c2y = target.y - dy * 0.25;
+
+    return `M ${source.x} ${source.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${target.x} ${target.y}`;
+  };
+
+  hbOverlay
+    .selectAll("path.hb-segment")
+    .data(chainSegments, (d) => d.id)
+    .join("path")
+    .attr("class", "hb-segment")
+    .attr("d", (d) => buildSegmentPath(d.source, d.target))
+    .attr("fill", "none")
+    .attr("stroke", "#7c3aed")
+    .attr("stroke-width", 4)
+    .attr("stroke-linecap", "round")
+    .attr("stroke-linejoin", "round")
+    .attr("opacity", 0.85)
+    .attr("pointer-events", "none");
+}
 
     node.each(function (d) {
       const markerLayer = d3.select(this).select(".event-marker-layer");
@@ -412,7 +487,7 @@ export default function LamportDiagram({
     }
 
     prevPlayIndexRef.current = playIndex;
-  }, [layout, height, processes, highlightProcess, animateMessages, playIndex]);
+  }, [layout, height, processes, highlightProcess, animateMessages, playIndex, activeHbChain]);
 
   return (
     <div className="lamport-diagram">

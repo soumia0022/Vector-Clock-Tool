@@ -128,3 +128,19 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.analysis-chain {
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.analysis-chain:hover {
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.analysis-chain.is-active {
+  background: rgba(124, 58, 237, 0.16);
+  font-weight: 600;
+}
