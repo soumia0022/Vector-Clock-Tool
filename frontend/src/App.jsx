@@ -16,6 +16,7 @@ import { useDiagramQuiz } from "./hooks/useDiagramQuiz";
 
 import { getEventExplanation } from "./utils/eventExplanation";
 import { buildHbChains } from "./utils/hbChains";
+import { buildConcurrentGroups } from "./utils/concurrentGroups";
 
 
 import "./styles/theme.css";
@@ -48,6 +49,10 @@ export default function App() {
 
   const hbChains = useMemo(() => {
     return buildHbChains(state?.hb || []);
+  }, [state]);
+
+  const concurrentGroups = useMemo(() => {
+  return buildConcurrentGroups(state?.co || []);
   }, [state]);
 
   const currentExplanation = useMemo(() => {
@@ -129,6 +134,7 @@ export default function App() {
              hbChains={hbChains}
              activeHbChain={activeHbChain}
              onHoverChain={setActiveHbChain}
+             concurrentGroups={concurrentGroups}
             />
 
             <div className="diagram-card">

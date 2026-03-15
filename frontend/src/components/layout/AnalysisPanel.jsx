@@ -3,6 +3,7 @@ export default function AnalysisPanel({
   hbChains = [],
   activeHbChain = null,
   onHoverChain,
+  concurrentGroups = [],
 }) {
   if (!state) return null;
 
@@ -40,18 +41,18 @@ export default function AnalysisPanel({
 
       <hr className="divider" />
 
-      <div className="section-title">Concurrent pairs</div>
-      {state.co?.length ? (
-        <ul className="analysis-list">
-          {state.co.map((pair, idx) => (
-            <li key={idx}>
-              {(pair.event1 ?? pair.a)} ‖ {(pair.event2 ?? pair.b)}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="muted-text">Not computed yet.</div>
-      )}
+      <div className="section-title">Concurrent groups</div>
+{concurrentGroups.length ? (
+  <ul className="analysis-list">
+    {concurrentGroups.map((group, idx) => (
+      <li key={idx}>
+        {group.events.join(", ")} ‖ {"{"}{group.others.join(", ")}{"}"}
+      </li>
+    ))}
+  </ul>
+) : (
+  <div className="muted-text">Not computed yet.</div>
+)}
     </div>
   );
 }
