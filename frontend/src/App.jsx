@@ -45,6 +45,7 @@ export default function App() {
   const diagramQuiz = useDiagramQuiz(setQuizError);
 
   const [activeHbChain, setActiveHbChain] = useState(null);
+  const [activeConcurrentGroup, setActiveConcurrentGroup] = useState(null);
 
 
   const hbChains = useMemo(() => {
@@ -135,6 +136,8 @@ export default function App() {
              activeHbChain={activeHbChain}
              onHoverChain={setActiveHbChain}
              concurrentGroups={concurrentGroups}
+             activeConcurrentGroup={activeConcurrentGroup}
+             onHoverConcurrentGroup={setActiveConcurrentGroup}
             />
 
             <div className="diagram-card">
@@ -147,6 +150,7 @@ export default function App() {
                 animateMessages={true}
                 playIndex={playback.playIndex}
                 activeHbChain={activeHbChain}
+                activeConcurrentGroup={activeConcurrentGroup}
               />
             </div>
 
