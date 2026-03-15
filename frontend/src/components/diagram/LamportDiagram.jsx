@@ -2,6 +2,63 @@ import { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
 import "../../styles/lamport.css";
 
+const EVENT_STYLES = {
+  LOCAL: {
+    fill: "#2563eb",
+    marker: "dot",
+  },
+  SEND: {
+    fill: "#d97706",
+    marker: "triangle",
+  },
+  RECEIVE: {
+    fill: "#059669",
+    marker: "square",
+  },
+};
+
+function getEventStyle(type) {
+  return (
+    EVENT_STYLES[type] || {
+      fill: "#6b7280",
+      marker: "dot",
+    }
+  );
+}
+
+function drawInnerMarker(group, eventType) {
+  group.selectAll(".event-marker").remove();
+
+  const { marker } = getEventStyle(eventType);
+
+  if (marker === "dot") {
+    group
+      .append("circle")
+      .attr("class", "event-marker")
+      .attr("r", 2.8)
+      .attr("fill", "#111827");
+  }
+
+  if (marker === "triangle") {
+    group
+      .append("path")
+      .attr("class", "event-marker")
+      .attr("d", "M 0 -4.8 L 4.8 3.8 L -4.8 3.8 Z")
+      .attr("fill", "#111827");
+  }
+
+  if (marker === "square") {
+    group
+      .append("rect")
+      .attr("class", "event-marker")
+      .attr("x", -3.6)
+      .attr("y", -3.6)
+      .attr("width", 7.2)
+      .attr("height", 7.2)
+      .attr("fill", "#111827");
+  }
+}
+
 export default function LamportDiagram({
   processes = [],
   events = [],
@@ -35,7 +92,6 @@ export default function LamportDiagram({
     const nodes = events.map((ev) => {
       const prevY = lastYByProcess.get(ev.process) ?? (margin.top - rowGap);
 
-      // Default: stack next event below previous event on same process
       let y = prevY + rowGap;
 
       if (ev.type === "SEND" && ev.message_id) {
@@ -48,10 +104,6 @@ export default function LamportDiagram({
         sendYByMessage.has(ev.message_id)
       ) {
         const sendY = sendYByMessage.get(ev.message_id);
-
-        // Receive must be below both:
-        // 1) previous event on this process
-        // 2) matching send event
         y = Math.max(y, sendY + rowGap);
       }
 
@@ -80,6 +132,7 @@ export default function LamportDiagram({
       .attr("height", height);
 
     const defs = svg.append("defs");
+
     defs
       .append("marker")
       .attr("id", "arrowhead")
@@ -146,27 +199,31 @@ export default function LamportDiagram({
     }
 
     const links = [];
-    for (const [msgId, s] of sendByMsg.entries()) {
-      const r = recvByMsg.get(msgId);
-      if (r) {
-        links.push({ id: msgId, source: s, target: r });
+    for (const [msgId, sendNode] of sendByMsg.entries()) {
+      const receiveNode = recvByMsg.get(msgId);
+      if (receiveNode) {
+        links.push({
+          id: msgId,
+          source: sendNode,
+          target: receiveNode,
+        });
       }
     }
 
     const linkG = viewport.append("g").attr("class", "message-links");
 
-    const curvedPath = (s, t) => {
-      const dx = t.x - s.x;
-      const dy = t.y - s.y;
+    const curvedPath = (source, target) => {
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
       const curvature = 0.35;
 
-      const cx1 = s.x + dx * 0.25;
-      const cy1 = s.y + dy * curvature;
+      const cx1 = source.x + dx * 0.25;
+      const cy1 = source.y + dy * curvature;
 
-      const cx2 = s.x + dx * 0.75;
-      const cy2 = t.y - dy * curvature;
+      const cx2 = source.x + dx * 0.75;
+      const cy2 = target.y - dy * curvature;
 
-      return `M ${s.x} ${s.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${t.x} ${t.y}`;
+      return `M ${source.x} ${source.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${target.x} ${target.y}`;
     };
 
     const linkSel = linkG
@@ -187,8 +244,6 @@ export default function LamportDiagram({
 
     if (animateMessages && playIndex > prevPlayIndex) {
       const animLayer = viewport.append("g").attr("class", "message-anim");
-
-      // Animate only the newly revealed event(s)
       const newlyVisibleEvents = nodes.slice(prevPlayIndex, playIndex);
 
       newlyVisibleEvents.forEach((ev) => {
@@ -215,8 +270,8 @@ export default function LamportDiagram({
           .ease(d3.easeCubicInOut)
           .tween("pathTween", () => {
             return (t) => {
-              const p = pathNode.getPointAtLength(t * total);
-              dot.attr("cx", p.x).attr("cy", p.y);
+              const point = pathNode.getPointAtLength(t * total);
+              dot.attr("cx", point.x).attr("cy", point.y);
             };
           })
           .transition()
@@ -233,7 +288,8 @@ export default function LamportDiagram({
       .data(nodes, (d) => d.id)
       .join((enter) => {
         const ng = enter.append("g").attr("class", "node");
-        ng.append("circle");
+        ng.append("circle").attr("class", "event-outer");
+        ng.append("g").attr("class", "event-marker-layer");
         ng.append("text");
         ng.append("title");
         return ng;
@@ -242,32 +298,44 @@ export default function LamportDiagram({
     node.attr("transform", (d) => `translate(${d.x},${d.y})`);
 
     node
-      .select("circle")
-      .attr("r", 7)
-      .attr("fill", "currentColor")
+      .select("circle.event-outer")
+      .attr("r", 9)
+      .attr("fill", (d) => getEventStyle(d.type).fill)
+      .attr("stroke", "#111827")
+      .attr("stroke-width", 1.4)
       .attr("opacity", (d) =>
-        highlightProcess ? (d.process === highlightProcess ? 0.95 : 0.25) : 0.9
+        highlightProcess ? (d.process === highlightProcess ? 0.95 : 0.28) : 0.95
       );
+
+    node.each(function (d) {
+      const markerLayer = d3.select(this).select(".event-marker-layer");
+      drawInnerMarker(markerLayer, d.type);
+
+      markerLayer.attr("opacity", () =>
+        highlightProcess ? (d.process === highlightProcess ? 1 : 0.3) : 1
+      );
+    });
 
     node
       .select("text")
-      .attr("x", 12)
+      .attr("x", 14)
       .attr("y", 4)
       .attr("fill", "currentColor")
       .attr("opacity", (d) =>
         highlightProcess ? (d.process === highlightProcess ? 0.95 : 0.25) : 0.9
       )
       .attr("font-size", 12)
-      .text((d) => `${d.id} (${d.type})`);
+      .text((d) => d.id);
 
     node
       .select("title")
       .text((d) => {
-        const ts = Array.isArray(d.timestamp)
+        const timestampText = Array.isArray(d.timestamp)
           ? `[${d.timestamp.join(", ")}]`
           : "";
-        const msg = d.message_id ? `\nmessage: ${d.message_id}` : "";
-        return `${d.id}\nprocess: ${d.process}\ntype: ${d.type}\nts: ${ts}${msg}`;
+        const messageText = d.message_id ? `\nmessage: ${d.message_id}` : "";
+
+        return `${d.id}\nprocess: ${d.process}\ntype: ${d.type}\nts: ${timestampText}${messageText}`;
       });
 
     prevPlayIndexRef.current = playIndex;
@@ -278,6 +346,23 @@ export default function LamportDiagram({
   return (
     <div className="lamport-diagram">
       <svg ref={svgRef} className="lamport-diagram__svg" />
+
+      <div className="lamport-legend">
+        <div className="lamport-legend__item">
+          <span className="lamport-legend__symbol lamport-legend__symbol--local" />
+          <span>Local</span>
+        </div>
+
+        <div className="lamport-legend__item">
+          <span className="lamport-legend__symbol lamport-legend__symbol--send" />
+          <span>Send</span>
+        </div>
+
+        <div className="lamport-legend__item">
+          <span className="lamport-legend__symbol lamport-legend__symbol--receive" />
+          <span>Receive</span>
+        </div>
+      </div>
 
       <div className="lamport-diagram__tip">
         Tip: drag to pan • scroll to zoom • messages animate when new SEND/RECEIVE
