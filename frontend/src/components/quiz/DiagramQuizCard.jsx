@@ -49,9 +49,9 @@ export default function DiagramQuizCard({
         <button
           onClick={onNext}
           disabled={busy || !canNext}
-          className="btn btn-outline"
+          className="btn-primary btn"
         >
-          Next diagram question
+          Next question
         </button>
       </div>
     </div>

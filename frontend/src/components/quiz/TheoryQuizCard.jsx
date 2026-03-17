@@ -48,9 +48,9 @@ export default function TheoryQuizCard({
         <button
           onClick={onNext}
           disabled={busy}
-          className="btn btn-outline"
+          className="btn-primary btn"
         >
-          Next theory question
+          Next question
         </button>
       </div>
     </div>
