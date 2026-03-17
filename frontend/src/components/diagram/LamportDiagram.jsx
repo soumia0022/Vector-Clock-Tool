@@ -138,6 +138,12 @@ export default function LamportDiagram({
     const { width, margin, x, nodes } = layout;
     const prevPlayIndex = prevPlayIndexRef.current;
 
+    const maxNodeY =
+      nodes.length > 0 ? d3.max(nodes, (d) => d.y) : margin.top;
+
+    const contentHeight = Math.max(height, maxNodeY + 60);
+    const laneBottom = contentHeight - 20;
+
     const currentEventId =
       playIndex > 0 && playIndex <= nodes.length
         ? nodes[playIndex - 1]?.id
@@ -153,9 +159,9 @@ export default function LamportDiagram({
     ]);
 
     svg
-      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("viewBox", `0 0 ${width} ${contentHeight}`)
       .attr("width", "100%")
-      .attr("height", height);
+      .attr("height", contentHeight);
 
     const defs = svg.append("defs");
 
@@ -211,7 +217,7 @@ export default function LamportDiagram({
       .attr("x1", (d) => x(d))
       .attr("x2", (d) => x(d))
       .attr("y1", margin.top)
-      .attr("y2", height - 20)
+      .attr("y2", laneBottom)
       .attr("stroke", "currentColor")
       .attr("opacity", (d) =>
         highlightProcess ? (d === highlightProcess ? 0.85 : 0.12) : 0.25
@@ -255,49 +261,35 @@ export default function LamportDiagram({
 
     const linkG = viewport.append("g").attr("class", "message-links");
 
-    const curvedPath = (source, target) => {
-      const dx = target.x - source.x;
-      const dy = target.y - source.y;
-      const curvature = 0.35;
+    const straightPath = (source, target) => {
+  const sourceRadius = getNodeRadius(source.id, currentEventId);
+  const targetRadius = getNodeRadius(target.id, currentEventId);
 
-      const c1x = source.x + dx * 0.25;
-      const c1y = source.y + dy * curvature;
+  const arrowGap = 10;
+  const sourceGap = 2;
 
-      const c2x = source.x + dx * 0.75;
-      const c2y = target.y - dy * curvature;
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const len = Math.hypot(dx, dy) || 1;
 
-      const sourceRadius = getNodeRadius(source.id, currentEventId);
-      const targetRadius = getNodeRadius(target.id, currentEventId);
+  // start just outside source node
+  const startX = source.x + (dx / len) * (sourceRadius + sourceGap);
+  const startY = source.y + (dy / len) * (sourceRadius + sourceGap);
 
-      const arrowGap = 10;
-      const sourceGap = 2;
+  // end just before target node (so arrowhead doesn't overlap)
+  const endOffset = targetRadius + arrowGap;
+  const endX = target.x - (dx / len) * endOffset;
+  const endY = target.y - (dy / len) * endOffset;
 
-      const startTangentX = c1x - source.x;
-      const startTangentY = c1y - source.y;
-      const startLen = Math.hypot(startTangentX, startTangentY) || 1;
-
-      const endTangentX = target.x - c2x;
-      const endTangentY = target.y - c2y;
-      const endLen = Math.hypot(endTangentX, endTangentY) || 1;
-
-      const startX =
-        source.x + (startTangentX / startLen) * (sourceRadius + sourceGap);
-      const startY =
-        source.y + (startTangentY / startLen) * (sourceRadius + sourceGap);
-
-      const endOffset = targetRadius + arrowGap;
-      const endX = target.x - (endTangentX / endLen) * endOffset;
-      const endY = target.y - (endTangentY / endLen) * endOffset;
-
-      return `M ${startX} ${startY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${endX} ${endY}`;
-    };
+  return `M ${startX} ${startY} L ${endX} ${endY}`;
+};
 
     const linkSel = linkG
       .selectAll("path.link")
       .data(links, (d) => d.id)
       .join("path")
       .attr("class", "link")
-      .attr("d", (d) => curvedPath(d.source, d.target))
+      .attr("d", (d) => straightPath(d.source, d.target))
       .attr("fill", "none")
       .attr("stroke", "currentColor")
       .attr("opacity", 0.35)
@@ -377,60 +369,62 @@ export default function LamportDiagram({
 
     node.attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-   node
-  .select("circle.event-glow")
-  .attr("r", (d) => {
-    if (d.id === currentEventId) return 18;
-    if (activeHbChain && activeChainEventIds.has(d.id)) return 14;
-    return 0;
-  })
-  .attr("fill", (d) => {
-    if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
-    return getEventStyle(d.type).fill;
-  })
-  .attr("opacity", (d) => {
-    if (d.id === currentEventId) return 0.22;
-    if (activeHbChain && activeChainEventIds.has(d.id)) return 0.18;
-    return 0;
-  })
-  .attr("filter", "url(#eventGlow)");
     node
-  .select("circle.event-outer")
-  .attr("r", (d) => {
-    if (activeConcurrentEventIds.has(d.id)) {
-      return Math.max(getNodeRadius(d.id, currentEventId), 11);
-    }
-    return getNodeRadius(d.id, currentEventId);
-  })
-  .attr("fill", (d) => getEventStyle(d.type).fill)
-  .attr("stroke", (d) => {
-    if (concurrentLeftIds.has(d.id)) return "#c21dd8";
-    if (concurrentRightIds.has(d.id)) return "#ea580c";
-    if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
-    if (d.id === currentEventId) return "#f8fafc";
-    return "#111827";
-  })
-  .attr("stroke-width", (d) => {
-    if (concurrentLeftIds.has(d.id) || concurrentRightIds.has(d.id)) return 4;
-    if (activeHbChain && activeChainEventIds.has(d.id)) return 3;
-    if (d.id === currentEventId) return 2.6;
-    return 1.4;
-  })
-  .attr("opacity", (d) => {
-    if (activeHbChain) {
-      return activeChainEventIds.has(d.id) ? 1 : 0.18;
-    }
+      .select("circle.event-glow")
+      .attr("r", (d) => {
+        if (d.id === currentEventId) return 18;
+        if (activeHbChain && activeChainEventIds.has(d.id)) return 14;
+        return 0;
+      })
+      .attr("fill", (d) => {
+        if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
+        return getEventStyle(d.type).fill;
+      })
+      .attr("opacity", (d) => {
+        if (d.id === currentEventId) return 0.22;
+        if (activeHbChain && activeChainEventIds.has(d.id)) return 0.18;
+        return 0;
+      })
+      .attr("filter", "url(#eventGlow)");
 
-    if (activeConcurrentGroup) {
-      return activeConcurrentEventIds.has(d.id) ? 1 : 0.18;
-    }
+    node
+      .select("circle.event-outer")
+      .attr("r", (d) => {
+        if (activeConcurrentEventIds.has(d.id)) {
+          return Math.max(getNodeRadius(d.id, currentEventId), 11);
+        }
+        return getNodeRadius(d.id, currentEventId);
+      })
+      .attr("fill", (d) => getEventStyle(d.type).fill)
+      .attr("stroke", (d) => {
+        if (concurrentLeftIds.has(d.id)) return "#c21dd8";
+        if (concurrentRightIds.has(d.id)) return "#ea580c";
+        if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
+        if (d.id === currentEventId) return "#f8fafc";
+        return "#111827";
+      })
+      .attr("stroke-width", (d) => {
+        if (concurrentLeftIds.has(d.id) || concurrentRightIds.has(d.id))
+          return 4;
+        if (activeHbChain && activeChainEventIds.has(d.id)) return 3;
+        if (d.id === currentEventId) return 2.6;
+        return 1.4;
+      })
+      .attr("opacity", (d) => {
+        if (activeHbChain) {
+          return activeChainEventIds.has(d.id) ? 1 : 0.18;
+        }
 
-    if (highlightProcess) {
-      return d.process === highlightProcess ? 1 : 0.28;
-    }
+        if (activeConcurrentGroup) {
+          return activeConcurrentEventIds.has(d.id) ? 1 : 0.18;
+        }
 
-    return d.id === currentEventId ? 1 : 0.95;
-  });
+        if (highlightProcess) {
+          return d.process === highlightProcess ? 1 : 0.28;
+        }
+
+        return d.id === currentEventId ? 1 : 0.95;
+      });
 
     node.each(function (d) {
       const markerLayer = d3.select(this).select(".event-marker-layer");
@@ -561,7 +555,8 @@ export default function LamportDiagram({
       </div>
 
       <div className="lamport-diagram__tip">
-        Tip: drag to pan • scroll to zoom • messages animate when new SEND/RECEIVE appears
+        Tip: drag to pan • scroll to zoom • messages animate when new
+        SEND/RECEIVE appears
       </div>
     </div>
   );
