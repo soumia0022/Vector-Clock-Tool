@@ -377,69 +377,60 @@ export default function LamportDiagram({
 
     node.attr("transform", (d) => `translate(${d.x},${d.y})`);
 
+   node
+  .select("circle.event-glow")
+  .attr("r", (d) => {
+    if (d.id === currentEventId) return 18;
+    if (activeHbChain && activeChainEventIds.has(d.id)) return 14;
+    return 0;
+  })
+  .attr("fill", (d) => {
+    if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
+    return getEventStyle(d.type).fill;
+  })
+  .attr("opacity", (d) => {
+    if (d.id === currentEventId) return 0.22;
+    if (activeHbChain && activeChainEventIds.has(d.id)) return 0.18;
+    return 0;
+  })
+  .attr("filter", "url(#eventGlow)");
     node
-      .select("circle.event-glow")
-      .attr("r", (d) => {
-        if (d.id === currentEventId) return 18;
-        if (concurrentLeftIds.has(d.id) || concurrentRightIds.has(d.id))
-          return 15;
-        if (activeHbChain && activeChainEventIds.has(d.id)) return 14;
-        return 0;
-      })
-      .attr("fill", (d) => {
-        if (d.id === currentEventId) return getEventStyle(d.type).fill;
-        if (concurrentLeftIds.has(d.id)) return "#c21dd8";
-        if (concurrentRightIds.has(d.id)) return "#ea580c";
-        if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
-        return getEventStyle(d.type).fill;
-      })
-      .attr("opacity", (d) => {
-        if (d.id === currentEventId) return 0.22;
-        if (concurrentLeftIds.has(d.id) || concurrentRightIds.has(d.id))
-          return 0.16;
-        if (activeHbChain && activeChainEventIds.has(d.id)) return 0.18;
-        return 0;
-      })
-      .attr("filter", "url(#eventGlow)");
+  .select("circle.event-outer")
+  .attr("r", (d) => {
+    if (activeConcurrentEventIds.has(d.id)) {
+      return Math.max(getNodeRadius(d.id, currentEventId), 11);
+    }
+    return getNodeRadius(d.id, currentEventId);
+  })
+  .attr("fill", (d) => getEventStyle(d.type).fill)
+  .attr("stroke", (d) => {
+    if (concurrentLeftIds.has(d.id)) return "#c21dd8";
+    if (concurrentRightIds.has(d.id)) return "#ea580c";
+    if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
+    if (d.id === currentEventId) return "#f8fafc";
+    return "#111827";
+  })
+  .attr("stroke-width", (d) => {
+    if (concurrentLeftIds.has(d.id) || concurrentRightIds.has(d.id)) return 4;
+    if (activeHbChain && activeChainEventIds.has(d.id)) return 3;
+    if (d.id === currentEventId) return 2.6;
+    return 1.4;
+  })
+  .attr("opacity", (d) => {
+    if (activeHbChain) {
+      return activeChainEventIds.has(d.id) ? 1 : 0.18;
+    }
 
-    node
-      .select("circle.event-outer")
-      .attr("r", (d) => {
-        if (activeConcurrentEventIds.has(d.id)) {
-          return Math.max(getNodeRadius(d.id, currentEventId), 11);
-        }
-        return getNodeRadius(d.id, currentEventId);
-      })
-      .attr("fill", (d) => getEventStyle(d.type).fill)
-      .attr("stroke", (d) => {
-        if (d.id === currentEventId) return "#f8fafc";
-        if (concurrentLeftIds.has(d.id)) return "#c21dd8";
-        if (concurrentRightIds.has(d.id)) return "#ea580c";
-        if (activeHbChain && activeChainEventIds.has(d.id)) return "#7c3aed";
-        return "#111827";
-      })
-      .attr("stroke-width", (d) => {
-        if (d.id === currentEventId) return 2.6;
-        if (concurrentLeftIds.has(d.id) || concurrentRightIds.has(d.id))
-          return 3;
-        if (activeHbChain && activeChainEventIds.has(d.id)) return 3;
-        return 1.4;
-      })
-      .attr("opacity", (d) => {
-        if (activeHbChain) {
-          return activeChainEventIds.has(d.id) ? 1 : 0.18;
-        }
+    if (activeConcurrentGroup) {
+      return activeConcurrentEventIds.has(d.id) ? 1 : 0.18;
+    }
 
-        if (activeConcurrentGroup) {
-          return activeConcurrentEventIds.has(d.id) ? 1 : 0.18;
-        }
+    if (highlightProcess) {
+      return d.process === highlightProcess ? 1 : 0.28;
+    }
 
-        if (highlightProcess) {
-          return d.process === highlightProcess ? 1 : 0.28;
-        }
-
-        return d.id === currentEventId ? 1 : 0.95;
-      });
+    return d.id === currentEventId ? 1 : 0.95;
+  });
 
     node.each(function (d) {
       const markerLayer = d3.select(this).select(".event-marker-layer");
