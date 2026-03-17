@@ -217,6 +217,7 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
+  margin-top: 16px;
   padding: 16px;
   box-shadow: 0 10px 28px rgba(2, 6, 23, 0.12);
 }
@@ -380,6 +381,9 @@
   margin-top: 1.25rem;
   padding-top: 1rem;
   padding-bottom: 1rem;
+  min-height: 100px;
+  max-height: 120px;
+  overflow-y: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 

@@ -100,9 +100,7 @@ export default function PlaybackPanel({
           ))}
         </div>
 
-        <div className="playback-count">
-          {playIndex}/{state.events.length} events
-        </div>
+        
       </div>
 
       <div

@@ -66,16 +66,17 @@ export async function checkTheoryAnswer(questionId, selectedAnswer) {
   return r.json();
 }
 
-export async function getDiagramHBQuestion() {
-  const r = await fetch(`${API}/quiz/diagram/happens-before`);
+export async function getDiagramQuestion() {
+  const r = await fetch(`${API}/quiz/diagram`);
   return r.json();
 }
 
-export async function checkDiagramHBAnswer(eventA, eventB, selectedAnswer) {
-  const r = await fetch(`${API}/quiz/diagram/happens-before/check`, {
+export async function checkDiagramAnswer(type, eventA, eventB, selectedAnswer) {
+  const r = await fetch(`${API}/quiz/diagram/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      type,
       event_a: eventA,
       event_b: eventB,
       selected_answer: selectedAnswer,

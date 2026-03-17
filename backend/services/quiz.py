@@ -1,22 +1,19 @@
 import random
 from state import STATE
-from services.analysis import compute_happens_before
 
 
 def get_random_hb_question():
     events = STATE["events"]
+    hb_pairs = STATE["hb"]
 
     if len(events) < 2:
         raise ValueError("Need at least 2 events to generate a diagram quiz question")
 
-    # make sure happens-before is up to date
-    hb_edges = compute_happens_before()
-
     a, b = random.sample(events, 2)
 
     correct_answer = any(
-        edge["from"] == a["id"] and edge["to"] == b["id"]
-        for edge in hb_edges
+        pair["from"] == a["id"] and pair["to"] == b["id"]
+        for pair in hb_pairs
     )
 
     return {
@@ -29,13 +26,48 @@ def get_random_hb_question():
     }
 
 
-def check_hb_question_answer(event_a: str, event_b: str, selected_answer: str):
-    hb_edges = compute_happens_before()
+def get_random_concurrent_question():
+    co_pairs = STATE["co"]
 
-    correct_answer = any(
-        edge["from"] == event_a and edge["to"] == event_b
-        for edge in hb_edges
-    )
+    if not co_pairs:
+        raise ValueError("No concurrent event pairs available")
+
+    pair = random.choice(co_pairs)
+    event_a = pair["event1"]
+    event_b = pair["event2"]
+
+    return {
+        "type": "diagram_concurrent",
+        "question": f"Are {event_a} and {event_b} concurrent?",
+        "event_a": event_a,
+        "event_b": event_b,
+        "options": ["Yes", "No"],
+        "answer": "Yes",
+    }
+
+
+def get_random_diagram_question():
+    if STATE["co"] and random.choice([True, False]):
+        return get_random_concurrent_question()
+    return get_random_hb_question()
+
+
+def check_diagram_question_answer(question_type, event_a, event_b, selected_answer):
+    if question_type == "diagram_hb":
+        correct_answer = any(
+            pair["from"] == event_a and pair["to"] == event_b
+            for pair in STATE["hb"]
+        )
+
+    elif question_type == "diagram_concurrent":
+        correct_answer = any(
+            (pair["event1"] == event_a and pair["event2"] == event_b)
+            or (pair["event1"] == event_b and pair["event2"] == event_a)
+            for pair in STATE["co"]
+        )
+
+    else:
+        raise ValueError(f"Unknown question type: {question_type}")
 
     expected = "Yes" if correct_answer else "No"
 
@@ -88,12 +120,12 @@ THEORY_QUESTIONS = [
             "When they are on the same process"
         ],
         "answer": "When neither happened before the other"
-    }
-    ,{
-    "id": 5,
-    "question": "A local event in a vector clock increments only the component of the process where the event occurred.",
-    "options": ["True", "False"],
-    "answer": "True"
+    },
+    {
+        "id": 5,
+        "question": "A local event in a vector clock increments only the component of the process where the event occurred.",
+        "options": ["True", "False"],
+        "answer": "True"
     },
     {
         "id": 6,
@@ -149,15 +181,12 @@ THEORY_QUESTIONS = [
         "options": ["True", "False"],
         "answer": "True"
     }
-
-    
 ]
 
 
 def get_random_theory_question():
     q = random.choice(THEORY_QUESTIONS)
 
-    # do not send the answer yet
     return {
         "id": q["id"],
         "question": q["question"],
@@ -175,48 +204,4 @@ def check_theory_answer(question_id: int, selected_answer: str):
     return {
         "correct": correct,
         "correct_answer": question["answer"]
-    }
-
-
-
-
-def get_random_hb_question():
-    events = STATE["events"]
-
-    if len(events) < 2:
-        raise ValueError("Need at least 2 events to generate a diagram quiz question")
-
-    # make sure happens-before is up to date
-    hb_edges = compute_happens_before()
-
-    a, b = random.sample(events, 2)
-
-    correct_answer = any(
-        edge["from"] == a["id"] and edge["to"] == b["id"]
-        for edge in hb_edges
-    )
-
-    return {
-        "type": "diagram_hb",
-        "question": f"Does {a['id']} happen before {b['id']}?",
-        "event_a": a["id"],
-        "event_b": b["id"],
-        "options": ["Yes", "No"],
-        "answer": "Yes" if correct_answer else "No",
-    }
-
-
-def check_hb_question_answer(event_a: str, event_b: str, selected_answer: str):
-    hb_edges = compute_happens_before()
-
-    correct_answer = any(
-        edge["from"] == event_a and edge["to"] == event_b
-        for edge in hb_edges
-    )
-
-    expected = "Yes" if correct_answer else "No"
-
-    return {
-        "correct": selected_answer == expected,
-        "correct_answer": expected,
     }
