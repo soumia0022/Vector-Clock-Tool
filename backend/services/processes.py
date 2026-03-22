@@ -45,13 +45,13 @@ def delete_process(pid: str) -> int:
         if m.get("from") != pid and m.get("to") != pid
     ]
 
-    # 5) remove the deleted dimension from ALL remaining timestamps
+    # 5) remove the deleted dimension from the remaining timestamps
     for ev in STATE["events"]:
         ts = ev["timestamp"]
         if deleted_index < len(ts):
             ev["timestamp"] = ts[:deleted_index] + ts[deleted_index + 1:]
 
-    # 6) renumber processes AND rewrite event.process + message endpoints
+    # 6) renumber processes and rewrite event.process + message endpoints
     renumber_processes_and_rewrite_event_process_fields()
     refresh_graphs(renumber=False) 
 

@@ -3,11 +3,6 @@ import state as state_mod
 from services.analysis import compute_happens_before, compute_concurrent_events  
 
 def recompute_all_event_timestamps():
-    """
-    Recompute all vector timestamps from scratch
-    based on current process list and current event ordering.
-    Handles LOCAL, SEND, RECEIVE.
-    """
     n = len(STATE["processes"])
     current_vectors = {pid: [0] * n for pid in STATE["processes"]}
 
@@ -44,7 +39,6 @@ def recompute_all_event_timestamps():
             ev["timestamp"] = base[:]
 
         else:
-            # unknown type -> treat as local to avoid crashing
             current_vectors[pid][i] += 1
             ev["timestamp"] = current_vectors[pid][:]
 
