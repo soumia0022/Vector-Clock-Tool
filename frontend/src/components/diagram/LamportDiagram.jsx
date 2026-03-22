@@ -1,74 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
 import "../../styles/lamport.css";
-
-const EVENT_STYLES = {
-  LOCAL: {
-    fill: "#2563eb",
-    marker: "dot",
-  },
-  SEND: {
-    fill: "#d97706",
-    marker: "triangle",
-  },
-  RECEIVE: {
-    fill: "#059669",
-    marker: "square",
-  },
-};
-
-function getEventStyle(type) {
-  return (
-    EVENT_STYLES[type] || {
-      fill: "#6b7280",
-      marker: "dot",
-    }
-  );
-}
-
-function getNodeRadius(eventId, currentEventId) {
-  return eventId === currentEventId ? 13 : 9;
-}
-
-function drawInnerMarker(group, eventType, isActive = false) {
-  group.selectAll(".event-marker").remove();
-
-  const { marker } = getEventStyle(eventType);
-  const scale = isActive ? 1.2 : 1;
-
-  if (marker === "dot") {
-    group
-      .append("circle")
-      .attr("class", "event-marker")
-      .attr("r", 2.8 * scale)
-      .attr("fill", "#111827");
-  }
-
-  if (marker === "triangle") {
-    const topY = -4.8 * scale;
-    const sideX = 4.8 * scale;
-    const bottomY = 3.8 * scale;
-
-    group
-      .append("path")
-      .attr("class", "event-marker")
-      .attr("d", `M 0 ${topY} L ${sideX} ${bottomY} L ${-sideX} ${bottomY} Z`)
-      .attr("fill", "#111827");
-  }
-
-  if (marker === "square") {
-    const size = 7.2 * scale;
-
-    group
-      .append("rect")
-      .attr("class", "event-marker")
-      .attr("x", -size / 2)
-      .attr("y", -size / 2)
-      .attr("width", size)
-      .attr("height", size)
-      .attr("fill", "#111827");
-  }
-}
+import { createLamportLayout } from "./layout";
+import { drawInnerMarker } from "./markers";
+import { getEventStyle, getNodeRadius } from "../../constants/lamport";
+import {
+  buildMessageLinks,
+  buildStraightMessagePath,
+  buildHbSegmentPath,
+} from "./paths";
 
 export default function LamportDiagram({
   processes = [],
@@ -86,49 +26,7 @@ export default function LamportDiagram({
   const svgRef = useRef(null);
 
   const layout = useMemo(() => {
-    const margin = { top: 40, right: 70, bottom: 30, left: 40 };
-    const width = 900;
-    const innerW = width - margin.left - margin.right;
-    const rowGap = 60;
-
-    const x = d3
-      .scalePoint()
-      .domain(processes)
-      .range([margin.left, margin.left + innerW])
-      .padding(0.5);
-
-    const lastYByProcess = new Map(
-      processes.map((p) => [p, margin.top - rowGap])
-    );
-    const sendYByMessage = new Map();
-
-    const nodes = events.map((ev) => {
-      const prevY = lastYByProcess.get(ev.process) ?? margin.top - rowGap;
-      let y = prevY + rowGap;
-
-      if (ev.type === "SEND" && ev.message_id) {
-        sendYByMessage.set(ev.message_id, y);
-      }
-
-      if (
-        ev.type === "RECEIVE" &&
-        ev.message_id &&
-        sendYByMessage.has(ev.message_id)
-      ) {
-        const sendY = sendYByMessage.get(ev.message_id);
-        y = Math.max(y, sendY + rowGap);
-      }
-
-      lastYByProcess.set(ev.process, y);
-
-      return {
-        ...ev,
-        x: x(ev.process),
-        y,
-      };
-    });
-
-    return { width, margin, x, nodes };
+    return createLamportLayout(processes, events);
   }, [processes, events]);
 
   useEffect(() => {
@@ -138,9 +36,7 @@ export default function LamportDiagram({
     const { width, margin, x, nodes } = layout;
     const prevPlayIndex = prevPlayIndexRef.current;
 
-    const maxNodeY =
-      nodes.length > 0 ? d3.max(nodes, (d) => d.y) : margin.top;
-
+    const maxNodeY = nodes.length > 0 ? d3.max(nodes, (d) => d.y) : margin.top;
     const contentHeight = Math.max(height, maxNodeY + 60);
     const laneBottom = contentHeight - 20;
 
@@ -150,7 +46,6 @@ export default function LamportDiagram({
         : null;
 
     const activeChainEventIds = new Set(activeHbChain || []);
-
     const concurrentLeftIds = new Set(activeConcurrentGroup?.events || []);
     const concurrentRightIds = new Set(activeConcurrentGroup?.others || []);
     const activeConcurrentEventIds = new Set([
@@ -238,58 +133,18 @@ export default function LamportDiagram({
       .attr("font-size", 13)
       .text((d) => d);
 
-    const sendByMsg = new Map();
-    const recvByMsg = new Map();
-
-    for (const n of nodes) {
-      if (!n.message_id) continue;
-      if (n.type === "SEND") sendByMsg.set(n.message_id, n);
-      if (n.type === "RECEIVE") recvByMsg.set(n.message_id, n);
-    }
-
-    const links = [];
-    for (const [msgId, sendNode] of sendByMsg.entries()) {
-      const receiveNode = recvByMsg.get(msgId);
-      if (receiveNode) {
-        links.push({
-          id: msgId,
-          source: sendNode,
-          target: receiveNode,
-        });
-      }
-    }
+    const links = buildMessageLinks(nodes);
 
     const linkG = viewport.append("g").attr("class", "message-links");
-
-    const straightPath = (source, target) => {
-  const sourceRadius = getNodeRadius(source.id, currentEventId);
-  const targetRadius = getNodeRadius(target.id, currentEventId);
-
-  const arrowGap = 10;
-  const sourceGap = 2;
-
-  const dx = target.x - source.x;
-  const dy = target.y - source.y;
-  const len = Math.hypot(dx, dy) || 1;
-
-  // start just outside source node
-  const startX = source.x + (dx / len) * (sourceRadius + sourceGap);
-  const startY = source.y + (dy / len) * (sourceRadius + sourceGap);
-
-  // end just before target node (so arrowhead doesn't overlap)
-  const endOffset = targetRadius + arrowGap;
-  const endX = target.x - (dx / len) * endOffset;
-  const endY = target.y - (dy / len) * endOffset;
-
-  return `M ${startX} ${startY} L ${endX} ${endY}`;
-};
 
     const linkSel = linkG
       .selectAll("path.link")
       .data(links, (d) => d.id)
       .join("path")
       .attr("class", "link")
-      .attr("d", (d) => straightPath(d.source, d.target))
+      .attr("d", (d) =>
+        buildStraightMessagePath(d.source, d.target, currentEventId)
+      )
       .attr("fill", "none")
       .attr("stroke", "currentColor")
       .attr("opacity", 0.35)
@@ -321,28 +176,12 @@ export default function LamportDiagram({
         }
       }
 
-      const buildSegmentPath = (source, target) => {
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
-
-        if (source.process === target.process) {
-          return `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
-        }
-
-        const c1x = source.x + dx * 0.25;
-        const c1y = source.y + dy * 0.25;
-        const c2x = source.x + dx * 0.75;
-        const c2y = target.y - dy * 0.25;
-
-        return `M ${source.x} ${source.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${target.x} ${target.y}`;
-      };
-
       hbOverlay
         .selectAll("path.hb-segment")
         .data(chainSegments, (d) => d.id)
         .join("path")
         .attr("class", "hb-segment")
-        .attr("d", (d) => buildSegmentPath(d.source, d.target))
+        .attr("d", (d) => buildHbSegmentPath(d.source, d.target))
         .attr("fill", "none")
         .attr("stroke", "#7c3aed")
         .attr("stroke-width", 4)

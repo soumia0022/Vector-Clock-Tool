@@ -33,10 +33,10 @@ def delete_event_node(event_id: str) -> None:
     msg_id = target.get("message_id")
 
     if msg_id:
-        # delete BOTH send+receive (anything with same message_id)
+        # delete both send+receive (anything with same message_id)
         STATE["events"] = [ev for ev in STATE["events"] if ev.get("message_id") != msg_id]
 
-        # optional: also remove the message record
+        # also remove the message record
         STATE["messages"] = [m for m in STATE["messages"] if m.get("id") != msg_id]
     else:
         # local event: delete only itself

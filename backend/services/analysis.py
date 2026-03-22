@@ -22,6 +22,7 @@ def compute_happens_before() -> list[dict]:
 
     STATE["hb"] = hb_edges
     return hb_edges
+
 def compute_concurrent_events():
 
     events = STATE["events"]
