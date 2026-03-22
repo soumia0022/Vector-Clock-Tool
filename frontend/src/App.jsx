@@ -128,6 +128,9 @@ export default function App() {
           onCheckAnswer={theoryQuiz.checkAnswer}
           onClose={theoryQuiz.closeQuiz}
           onNext={theoryQuiz.generateQuiz}
+          aiExplanation={theoryQuiz.aiExplanation}
+          aiLoading={theoryQuiz.aiLoading}
+          onAskAI={theoryQuiz.askAIExplanation}
         />
 
         {state && (

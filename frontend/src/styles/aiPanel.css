@@ -39,6 +39,7 @@
 .ai-msg--ai {
   align-self: flex-start;
   background: #e5e7eb;
+  color: black;
 }
 
 .ai-panel__input {
