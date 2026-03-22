@@ -18,6 +18,8 @@ import { getEventExplanation } from "./utils/eventExplanation";
 import { buildHbChains } from "./utils/hbChains";
 import { buildConcurrentGroups } from "./utils/concurrentGroups";
 
+import AiPanel from "./components/ai/AiPanel";
+
 
 import "./styles/theme.css";
 import "./styles/app.css";
@@ -152,7 +154,9 @@ export default function App() {
                 activeHbChain={activeHbChain}
                 activeConcurrentGroup={activeConcurrentGroup}
               />
+              <AiPanel/>
             </div>
+            
 
             <div className="side-panel">
               <ProcessGrid

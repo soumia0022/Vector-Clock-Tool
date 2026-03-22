@@ -1,0 +1,50 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+}
+
+.ai-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-left: 1px solid #e5e7eb;
+  padding: 12px;
+  background: #f9fafb;
+}
+
+.ai-panel__messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-msg {
+  padding: 8px 10px;
+  border-radius: 10px;
+  max-width: 85%;
+}
+
+.ai-msg--user {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+}
+
+.ai-msg--ai {
+  align-self: flex-start;
+  background: #e5e7eb;
+}
+
+.ai-panel__input {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ai-panel__input input {
+  flex: 1;
+  padding: 8px;
+}
