@@ -13,10 +13,11 @@ export default function PlaybackPanel({
   onReset,
   onStepBack,
   onStepForward,
-  onJumpToEnd,
   onScrub,
 }) {
+  
   if (!state) return null;
+  const isFinished = playIndex >= state.events.length;
 
   return (
     <div className="playback-card">
@@ -46,13 +47,7 @@ export default function PlaybackPanel({
       )}
 
       <div className="playback-controls">
-        <button
-          onClick={onReset}
-          disabled={busy || state.events.length === 0}
-          className="btn btn-outline"
-        >
-          Reset
-        </button>
+        
 
         <button
           onClick={onStepBack}
@@ -63,11 +58,18 @@ export default function PlaybackPanel({
         </button>
 
         <button
-          onClick={() => setIsPlaying((value) => !value)}
+          onClick={() => {
+            if (isFinished) {
+              onReset();          
+              setIsPlaying(true); 
+            } else {
+              setIsPlaying((value) => !value);
+            }
+          }}
           disabled={busy || state.events.length === 0}
           className="btn btn-secondary"
         >
-          {isPlaying ? "Pause" : "Play"}
+          {isFinished ? "Replay" : isPlaying ? "Pause" : "Play"}
         </button>
 
         <button
@@ -76,14 +78,6 @@ export default function PlaybackPanel({
           className="btn btn-outline"
         >
           Step ▶
-        </button>
-
-        <button
-          onClick={onJumpToEnd}
-          disabled={busy || state.events.length === 0}
-          className="btn btn-outline"
-        >
-          Jump to end
         </button>
 
         <div className="playback-speed">

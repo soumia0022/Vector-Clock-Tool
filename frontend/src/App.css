@@ -4,6 +4,68 @@
   padding: 2rem;
   text-align: center;
 }
+.welcome-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  
+  z-index: 9999;
+}
+
+.welcome-modal {
+  width: min(680px, 100%);
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  padding: 22px;
+}
+
+.welcome-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.welcome-modal__title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.welcome-modal__close {
+  border: none;
+  background: transparent;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #475569;
+}
+
+.welcome-modal__body p {
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+
+.welcome-modal__list {
+  margin: 0 0 14px 18px;
+  padding: 0;
+}
+
+.welcome-modal__list li {
+  margin-bottom: 8px;
+}
+
+.welcome-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
 
 .logo {
   height: 6em;
