@@ -8,6 +8,9 @@ export default function DiagramQuizCard({
   onCheckAnswer,
   onClose,
   onNext,
+  aiExplanation,
+  aiLoading,
+  onAskAI,
 }) {
   if (!question) return null;
 
@@ -40,9 +43,25 @@ export default function DiagramQuizCard({
       </div>
 
       {result && (
-        <div className={getResultClass(result)}>
-          {result}
-        </div>
+        <>
+          <div className={getResultClass(result)}>
+            {result}
+          </div>
+
+          <button
+            onClick={onAskAI}
+            disabled={aiLoading || !result}
+            className="btn-primary btn ask-ai-button "
+          >
+            {aiLoading ? "Thinking..." : "Ask AI"}
+          </button>
+
+          {aiExplanation && (
+            <div className="ai-explanation">
+              {aiExplanation}
+            </div>
+          )}
+        </>
       )}
 
       <div className="quiz-actions">

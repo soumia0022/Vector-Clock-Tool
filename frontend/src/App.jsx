@@ -119,6 +119,9 @@ export default function App() {
           onCheckAnswer={diagramQuiz.checkAnswer}
           onClose={diagramQuiz.closeQuiz}
           onNext={diagramQuiz.generateQuiz}
+          aiExplanation={diagramQuiz.aiExplanation}
+          aiLoading={diagramQuiz.aiLoading}
+          onAskAI={diagramQuiz.askAIExplanation}
         />
 
         <TheoryQuizCard
