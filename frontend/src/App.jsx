@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-
+import { createPortal } from "react-dom";
 import Toolbar from "./components/layout/Toolbar";
 import AnalysisPanel from "./components/layout/AnalysisPanel";
 import DebugPanel from "./components/layout/DebugPanel";
@@ -27,6 +27,8 @@ import "./styles/app.css";
 export default function App() {
   const [hoveredPid, setHoveredPid] = useState(null);
   const [quizError, setQuizError] = useState("");
+  const [showWelcome, setShowWelcome] = useState(true);
+  
 
   const {
     state,
@@ -71,8 +73,45 @@ export default function App() {
 
   const error = stateError || quizError;
 
+  
+
   return (
     <div className="app-page">
+      {showWelcome &&
+  createPortal(
+    <div className="welcome-modal__backdrop">
+      <div className="welcome-modal">
+        <div className="welcome-modal__header">
+          <button onClick={() => setShowWelcome(false)}>×</button>
+          <h2>Welcome to the Vector Clock Tool</h2>
+          
+        </div>
+
+        <div className="welcome-modal__body">
+          <p>
+            This tool helps you visualise vector clocks and understand causality
+            in distributed systems.
+          </p>
+
+          <ul>
+            <li>Build event diagrams</li>
+            <li>Explore happens-before and concurrency</li>
+            <li>Use playback to step through events</li>
+            <li>Test yourself with quizzes</li>
+            <li>Ask AI for explanations</li>
+          </ul>
+        </div>
+
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowWelcome(false)}
+        >
+          Get started
+        </button>
+      </div>
+    </div>,
+    document.body   
+  )}
       <div className="app-container">
         <h1 className="app-heading">Vector Clock Tool</h1>
         <p className="app-subheading">
@@ -80,6 +119,8 @@ export default function App() {
         </p>
 
         {error && <div className="error-box">{error}</div>}
+
+        
 
         <Toolbar
           busy={combinedBusy}

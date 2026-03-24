@@ -20,7 +20,25 @@
   color: var(--text);
   letter-spacing: -0.02em;
 }
+.welcome-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+
+  z-index: 9999; 
+}
+
+.welcome-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  width: 500px;
+}
 .app-subheading {
   text-align: center;
   color: var(--muted);
@@ -135,53 +153,6 @@
 .ask-ai-button {
   margin-top:10px ;
   margin-bottom: 10px;
-}
-.section-title-with-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.info-tooltip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.info-tooltip__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  font-size: 12px;
-  cursor: help;
-  color: #475569;
-  background: #e2e8f0;
-}
-
-.info-tooltip__bubble {
-  position: absolute;
-  left: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 240px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 0.86rem;
-  line-height: 1.35;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-  z-index: 20;
-}
-
-.info-tooltip:hover .info-tooltip__bubble {
-  opacity: 1;
 }
 .ai-explanation {
   color: #000000;
