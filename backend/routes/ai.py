@@ -13,6 +13,11 @@ def ai_chat():
     try:
         data = request.get_json(force=True)
         user_question = data["question"]
+        if not GITHUB_TOKEN:
+            return jsonify({
+                "ok": True,
+                "reply": "AI feature is not configured. Please add a GITHUB_TOKEN in a .env file to enable AI explanations."
+            })
 
         prompt = f"""
 You are an AI teaching assistant for a vector clock visualiser.
@@ -58,4 +63,5 @@ Student question:
         return jsonify({"ok": True, "reply": ai_text})
 
     except Exception as e:
+        
         return jsonify({"ok": False, "error": str(e)}), 400
