@@ -37,6 +37,7 @@ def delete_event(event_id: str):
         return jsonify({"ok": False, "error": str(e)}), 404
     return jsonify({"ok": True, "state": STATE})
 @bp.post("/event/send")
+
 def create_send_event():
     data = request.get_json()
     from_pid = data.get("from")

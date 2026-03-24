@@ -1,4 +1,4 @@
-import { getEventStyle } from "../..constants/lamport";
+import { getEventStyle } from "../../constants/lamport";
 
 export function drawInnerMarker(group, eventType, isActive = false) {
   group.selectAll(".event-marker").remove();

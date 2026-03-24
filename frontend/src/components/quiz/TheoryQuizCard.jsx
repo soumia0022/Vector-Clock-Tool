@@ -7,6 +7,9 @@ export default function TheoryQuizCard({
   onCheckAnswer,
   onClose,
   onNext,
+  aiExplanation,
+  aiLoading,
+  onAskAI,
 }) {
   if (!question) return null;
 
@@ -39,10 +42,26 @@ export default function TheoryQuizCard({
       </div>
 
       {result && (
-        <div className={getResultClass(result)}>
-          {result}
-        </div>
-      )}
+  <>
+    <div className={getResultClass(result)}>
+      {result}
+    </div>
+
+    <button
+      onClick={() => {onAskAI(); console.log("ASK AI CLICKED"); }}
+      disabled={aiLoading}
+      className="btn-primary btn ask-ai-button"
+    >
+      {aiLoading ? "Thinking..." : "Ask AI"}
+    </button>
+
+    {aiExplanation && (
+      <div className="ai-explanation">
+        {aiExplanation}
+      </div>
+    )}
+  </>
+)}
 
       <div className="quiz-actions">
         <button

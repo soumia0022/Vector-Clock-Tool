@@ -8,7 +8,7 @@ import {
   buildMessageLinks,
   buildStraightMessagePath,
   buildHbSegmentPath,
-} from "./paths";
+} from "./path";
 
 export default function LamportDiagram({
   processes = [],

@@ -18,6 +18,8 @@ import { getEventExplanation } from "./utils/eventExplanation";
 import { buildHbChains } from "./utils/hbChains";
 import { buildConcurrentGroups } from "./utils/concurrentGroups";
 
+import AiPanel from "./components/ai/AiPanel";
+
 
 import "./styles/theme.css";
 import "./styles/app.css";
@@ -117,6 +119,9 @@ export default function App() {
           onCheckAnswer={diagramQuiz.checkAnswer}
           onClose={diagramQuiz.closeQuiz}
           onNext={diagramQuiz.generateQuiz}
+          aiExplanation={diagramQuiz.aiExplanation}
+          aiLoading={diagramQuiz.aiLoading}
+          onAskAI={diagramQuiz.askAIExplanation}
         />
 
         <TheoryQuizCard
@@ -126,6 +131,9 @@ export default function App() {
           onCheckAnswer={theoryQuiz.checkAnswer}
           onClose={theoryQuiz.closeQuiz}
           onNext={theoryQuiz.generateQuiz}
+          aiExplanation={theoryQuiz.aiExplanation}
+          aiLoading={theoryQuiz.aiLoading}
+          onAskAI={theoryQuiz.askAIExplanation}
         />
 
         {state && (
@@ -152,7 +160,9 @@ export default function App() {
                 activeHbChain={activeHbChain}
                 activeConcurrentGroup={activeConcurrentGroup}
               />
+              <AiPanel/>
             </div>
+            
 
             <div className="side-panel">
               <ProcessGrid
