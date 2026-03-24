@@ -46,10 +46,7 @@ export function usePlayback(eventsLength) {
     setPlayIndex((current) => Math.min(eventsLength, current + 1));
   };
 
-  const jumpToEnd = () => {
-    setIsPlaying(false);
-    setPlayIndex(eventsLength);
-  };
+  
 
   const jumpToIndex = (nextIndex) => {
     setIsPlaying(false);
@@ -67,7 +64,6 @@ export function usePlayback(eventsLength) {
     reset,
     stepBack,
     stepForward,
-    jumpToEnd,
     jumpToIndex,
   };
 }

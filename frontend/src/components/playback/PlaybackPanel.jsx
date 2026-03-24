@@ -13,7 +13,6 @@ export default function PlaybackPanel({
   onReset,
   onStepBack,
   onStepForward,
-  onJumpToEnd,
   onScrub,
 }) {
   
@@ -79,14 +78,6 @@ export default function PlaybackPanel({
           className="btn btn-outline"
         >
           Step ▶
-        </button>
-
-        <button
-          onClick={onJumpToEnd}
-          disabled={busy || state.events.length === 0}
-          className="btn btn-outline"
-        >
-          Jump to end
         </button>
 
         <div className="playback-speed">

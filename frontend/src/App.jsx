@@ -142,7 +142,6 @@ export default function App() {
           onReset={playback.reset}
           onStepBack={playback.stepBack}
           onStepForward={playback.stepForward}
-          onJumpToEnd={playback.jumpToEnd}
           onScrub={(e) => {
             if (!state) return;
             const rect = e.currentTarget.getBoundingClientRect();
@@ -221,7 +220,7 @@ export default function App() {
           </div>
         )}
 
-        <DebugPanel state={state} />
+        
       </div>
     </div>
   );
