@@ -4,7 +4,7 @@ export const EVENT_STYLES = {
     marker: "dot",
   },
   SEND: {
-    fill: "#d97706",
+    fill: "#d5d906",
     marker: "triangle",
   },
   RECEIVE: {
