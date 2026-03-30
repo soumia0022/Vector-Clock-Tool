@@ -1,5 +1,5 @@
 STATE = {
-    {"co":[
+    "co":[
         {"event1":"e1","event2":"e2"},
         {"event1":"e2","event2":"e3"},
         {"event1":"e6","event2":"e7"}],
@@ -33,7 +33,7 @@ STATE = {
         {"from":"P1","id":"m1","to":"P2"},
         {"from":"P2","id":"m2","to":"P1"}],
     "processes":["P1","P2"]}      
-}
+
 
 
 NEXT_PROCESS_NUM = 1
