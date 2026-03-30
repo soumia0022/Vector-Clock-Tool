@@ -1,4 +1,4 @@
-const API = "http://localhost:5000";
+const API = "https://vector-clock-tool.onrender.com/";
 
 export async function askAI(question) {
   const r = await fetch(`${API}/ai/chat`, {

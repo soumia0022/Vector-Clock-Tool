@@ -1,4 +1,4 @@
-const API = "http://localhost:5000";
+const API = "https://vector-clock-tool.onrender.com/";
 
 async function readJson(response) {
   return response.json();
