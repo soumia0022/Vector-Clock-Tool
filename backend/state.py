@@ -36,8 +36,8 @@ STATE = {
 
 
 
-NEXT_PROCESS_NUM = 1
-NEXT_EVENT_NUM = 1
+NEXT_PROCESS_NUM = 3
+NEXT_EVENT_NUM = 8
 
 
 def reset_state():
