@@ -39,6 +39,7 @@ export default function ProcessActionsCard({
           onChange={(e) => setFromPid(e.target.value)}
           disabled={busy}
           className="process-actions-card__select"
+          label="From process"
         >
           <option value="">From...</option>
           {processes.map((pid) => (
@@ -53,6 +54,7 @@ export default function ProcessActionsCard({
           onChange={(e) => setToPid(e.target.value)}
           disabled={busy}
           className="process-actions-card__select"
+          label="To process"
         >
           <option value="">To...</option>
           {processes.map((pid) => (
