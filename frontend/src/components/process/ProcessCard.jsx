@@ -58,6 +58,7 @@ export default function ProcessCard({
                 type="button"
                 onClick={() => onDeleteEvent(event.id)}
                 disabled={busy}
+                id="delete-event-button"
               >
                 <Trash2 size={16} />
               </button>
