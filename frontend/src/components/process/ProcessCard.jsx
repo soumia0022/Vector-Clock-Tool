@@ -59,6 +59,7 @@ export default function ProcessCard({
                 onClick={() => onDeleteEvent(event.id)}
                 disabled={busy}
                 id="delete-event-button"
+                aria-label={`Delete event ${event.id}`}
               >
                 <Trash2 size={16} />
               </button>
