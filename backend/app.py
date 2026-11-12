@@ -9,6 +9,8 @@ from routes.events import bp as events_bp
 from routes.analysis import bp as analysis_bp
 from routes.quiz import bp as quiz_bp
 from routes.ai import bp as ai_bp
+import os
+   
 
 def create_app():
     app = Flask(__name__)
@@ -26,4 +28,4 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1", host="127.0.0.1", port=5000)
