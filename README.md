@@ -4,6 +4,10 @@ An interactive web tool for learning how **vector clocks** track causality in di
 
 My individual final-year project for my BSc Computer Science at King's College London (Feb–Apr 2026).
 
+### 🔗 [Live demo](https://vector-clock-tool.vercel.app/)
+
+The frontend is hosted on Vercel and the Flask API on Render. The API runs on a free plan that sleeps when it isn't used, so **the first load can take up to a minute**. The demo keeps one shared scenario in memory, so it resets when the server restarts.
+
 ---
 
 ## Why vector clocks?
@@ -32,6 +36,7 @@ Processes in a distributed system have no shared global clock, so you can't just
 | Backend | Python, Flask (REST API with blueprints) |
 | Testing | pytest + coverage (backend), Vitest + React Testing Library (frontend) |
 | CI | GitHub Actions: backend tests run on every push, with a **90% coverage** minimum |
+| Hosting | Vercel (frontend), Render (Flask API with Gunicorn) |
 
 ---
 
@@ -129,10 +134,10 @@ npm run test:run
 
 ## Future improvements
 
+- Per-user sessions, so each visitor gets their own scenario.
 - Persist scenarios so they can be saved and shared.
 - Add Lamport (scalar) clocks side by side for comparison.
 - More quiz question types and a scoring summary.
-- Deploy a public live demo.
 
 ---
 
